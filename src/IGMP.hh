@@ -3,7 +3,7 @@
 #include <clicknet/ip.h>
 
 struct click_igmp {
-    uint8_t	igmp_type;		
+    uint8_t	igmp_type;	// 0x11	
     uint8_t	igmp_code;		
     uint16_t	igmp_cksum;		
     uint32_t	igmp_groupadress;
