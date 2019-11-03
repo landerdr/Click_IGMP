@@ -2,7 +2,8 @@
 #define CLICKNET_IGMP_H
 #include <clicknet/ip.h>
 
-struct IGMP_groupmessage {
+struct IGMP_groupmessage
+{
     uint8_t	igmp_type;	// 0x11	
     uint8_t	igmp_code;		
     uint16_t	igmp_cksum;		
@@ -31,7 +32,7 @@ struct IGMP_reportmessage
 struct IGMP_grouprecord
 {
     uint8_t	igmp_type;	
-    uint8_t	igmp_auxdlen;		
+    uint8_t	igmp_auxdlen;	// 0	
     uint16_t	igmp_n;
     uint32_t    igmp_groupadress;
     struct in_addr[igmp_n] igmp_sources;
