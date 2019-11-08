@@ -16,7 +16,7 @@ struct IGMP_groupmessage
     };
     uint8_t igmp_qqic;
     uint16_t igmp_n;
-    struct in_addr[igmp_n] igmp_sources;
+    struct Vector<in_addr> igmp_sources;
 };
 
 struct IGMP_reportmessage

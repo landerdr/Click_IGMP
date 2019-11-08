@@ -16,7 +16,7 @@ class IGMP_Router : public Element {
 		
 		void push(int input, Packet* p );
 	private:
-		HashMap<int, Vector<int>> ports;
+//		HashMap<int, Vector<int>> ports;
 };
 
 CLICK_ENDDECLS
