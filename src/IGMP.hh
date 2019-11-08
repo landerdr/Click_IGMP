@@ -9,13 +9,13 @@ struct IGMP_groupmessage
     uint8_t	igmp_type;	// 0x11	
     uint8_t	igmp_code;		
     uint16_t	igmp_cksum;		
-    uint32_t	igmp_groupadress;
-    unsigned int igmp_resv : 4;
-    unsigned int igmp_s : 1;
-    unsigned int igmp_qrv: 3;
+    in_addr	igmp_groupadress;
+    unsigned igmp_resv  : 4;
+    unsigned igmp_s     : 1;
+    unsigned igmp_qrv   : 3;
     uint8_t igmp_qqic;
     uint16_t igmp_n;
-    Vector<in_addr> igmp_sources;
+    //Vector<in_addr> igmp_sources;
 };
 
 
@@ -24,7 +24,7 @@ struct IGMP_grouprecord
     uint8_t	igmp_type;	
     uint8_t	igmp_auxdlen;	// 0	
     uint16_t	igmp_n;
-    uint32_t    igmp_groupadress;
+    in_addr    igmp_groupadress;
     Vector<in_addr> igmp_sources;
     //aux data
 };

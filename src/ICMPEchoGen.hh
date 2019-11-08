@@ -10,15 +10,16 @@ class ICMPEchoGen : public Element {
 		~ICMPEchoGen();
 		
 		const char *class_name() const	{ return "ICMPEchoGen"; }
-		const char *port_count() const	{ return "1/1"; }
+		const char *port_count() const	{ return "0/1"; }
 		const char *processing() const	{ return PULL; }
 		int configure(Vector<String>&, ErrorHandler*);
 
         Packet* pull(int);
 
     private:
-    IPAddress src;
-    IPAddress dst;
+        IPAddress src;
+        IPAddress dst;
+        IPAddress grp;
         int id = 0;
 
 
