@@ -1,6 +1,7 @@
 #ifndef CLICKNET_IGMP_H
 #define CLICKNET_IGMP_H
 #include <clicknet/ip.h>
+#include <click/vector.cc>
 
 struct IGMP_groupmessage
 {
@@ -12,11 +13,11 @@ struct IGMP_groupmessage
     {
         unsigned int igmp_resv : 4;
         unsigned int igmp_s : 1;
-        unsigned int igmp_grv: 3;
+        unsigned int igmp_qrv: 3;
     };
     uint8_t igmp_qqic;
     uint16_t igmp_n;
-    struct Vector<in_addr> igmp_sources;
+    Vector<in_addr> igmp_sources;
 };
 
 struct IGMP_reportmessage
@@ -26,7 +27,7 @@ struct IGMP_reportmessage
     uint16_t	igmp_cksum;
     uint16_t    igmp_resv2;
     uint16_t    igmp_n;
-    struct IGMP_grouprecord[igmp_n] igmp_grouprecords;
+    Vector<IGMP_grouprecord> igmp_grouprecords;
 };
 
 struct IGMP_grouprecord
@@ -35,7 +36,7 @@ struct IGMP_grouprecord
     uint8_t	igmp_auxdlen;	// 0	
     uint16_t	igmp_n;
     uint32_t    igmp_groupadress;
-    struct in_addr[igmp_n] igmp_sources;
+    Vector<in_addr> igmp_sources;
     //aux data
 };
 
