@@ -2,8 +2,8 @@
 #include <click/args.hh>
 #include <click/error.hh>
 #include "IGMP_Router.hh"
-
 CLICK_DECLS
+
 IGMP_Router::IGMP_Router()
 {}
 
@@ -20,7 +20,17 @@ void IGMP_Router::push(int input, Packet* p ){
 	if (input == 0){
         WritablePacket* n = p->uniqueify();
         if(n->ip_header()->ip_p ==2){
+
             click_chatter("testing123");
+
+            click_ip* iph = (click_ip*) n->data();
+            test* format = (struct test*) (iph+1);
+            if(format->type==0x11){
+                click_chatter("gp");
+            }
+            if(format->type==0x22){
+                click_chatter("rp");
+            }
 
         }
 
