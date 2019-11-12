@@ -15,7 +15,7 @@ struct IGMP_groupmessage
     unsigned igmp_qrv   : 3;
     uint8_t igmp_qqic;
     uint16_t igmp_n;
-    //Vector<in_addr> igmp_sources;
+    Vector<in_addr> igmp_sources;
 };
 
 
