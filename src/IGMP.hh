@@ -6,34 +6,34 @@
 
 struct IGMP_groupmessage
 {
-    uint8_t	igmp_type;	// 0x11	
-    uint8_t	igmp_code;		
+    uint8_t	igmp_type;	        // 0x11	
+    uint8_t	igmp_code;	        // timout value 10x s
     uint16_t	igmp_cksum;		
-    in_addr	igmp_groupadress;
-    unsigned igmp_resv  : 4;
-    unsigned igmp_s     : 1;
-    unsigned igmp_qrv   : 3;
-    uint8_t igmp_qqic;
-    uint16_t igmp_n;
+    in_addr	    igmp_groupadress;   // MULTICAST ADRESS
+    unsigned    igmp_resv  : 4;     // RESERVED
+    unsigned    igmp_s     : 1;     // SUPRESS ROUTER FLAG
+    unsigned    igmp_qrv   : 3;     // ROBUSTNESS VARIABLE
+    uint8_t igmp_qqic;          // QUERY INTERVAL CODE
+    uint16_t    igmp_n;
     Vector<in_addr> igmp_sources;
 };
 
 
 struct IGMP_grouprecord
 {
-    uint8_t	igmp_type;	
-    uint8_t	igmp_auxdlen;	// 0	
-    uint16_t	igmp_n;
-    in_addr    igmp_groupadress;
-    Vector<in_addr> igmp_sources;
+    uint8_t	record_type;        // 1: INCLUDE MODE, 2: EXCLUDE MODE, 3: CHANGE TO INCLUDE, 4: CHANGE TO EXCLUDE	
+    uint8_t	igmp_auxdlen;	    // always 0	
+    uint16_t	igmp_n;     
+    in_addr     igmp_groupadress;   // MULTICAST ADDRESS
+    Vector<in_addr> igmp_sources;   // UNICAST ADDRESSES
     //aux data
 };
 struct IGMP_reportmessage
 {
-    uint8_t	igmp_type;	// 0x22
-    uint8_t	igmp_resv1;
+    uint8_t	igmp_type;	    // 0x22
+    uint8_t	igmp_resv1;     // RESERVED: 0
     uint16_t	igmp_cksum;
-    uint16_t    igmp_resv2;
+    uint16_t    igmp_resv2; // RESERVED: 0
     uint16_t    igmp_n;
     Vector<IGMP_grouprecord> igmp_grouprecords;
 };
