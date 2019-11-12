@@ -18,6 +18,13 @@ int IGMP_Router::configure(Vector<String> &conf, ErrorHandler *errh) {
 
 void IGMP_Router::push(int input, Packet* p ){
 	if (input == 0){
+        WritablePacket* n = p->uniqueify();
+        if(n->ip_header()->ip_p ==2){
+            click_chatter("testing123");
+
+        }
+
+        output(0).push(p);
 
 
 
@@ -25,4 +32,4 @@ void IGMP_Router::push(int input, Packet* p ){
 }
 
 CLICK_ENDDECLS
-EXPORT_ELEMENT(SimplePullElement)
+EXPORT_ELEMENT(IGMP_Router)
