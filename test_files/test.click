@@ -4,7 +4,7 @@ AddressInfo(responderAddr 10.0.0.2 1A:7C:3E:90:78:42)
 source::ICMPEchoGen(sourceAddr, responderAddr, 239.255.255.250);
 responder::ICMPPingResponder;
 switch::ListenEtherSwitch;
-
+routr::IGMP_Router;
 
 elementclass Router { $src | 
 	
@@ -42,6 +42,7 @@ elementclass Router { $src |
 
 source
 	-> RatedUnqueue(2)
+	-> routr
 	-> [0] sourceRouter::Router(sourceAddr) [0]
 	-> [0] switch
 
