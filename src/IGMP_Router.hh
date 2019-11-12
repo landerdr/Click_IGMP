@@ -3,6 +3,7 @@
 #include <click/element.hh>
 #include <click/vector.cc>
 #include <click/bighashmap.cc>
+#include "IGMP.hh"
 CLICK_DECLS
 
 struct test {
