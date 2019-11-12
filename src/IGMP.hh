@@ -4,6 +4,7 @@
 #include <click/vector.cc>
 
 
+// Membership QUERY message
 struct IGMP_groupmessage
 {
     uint8_t	igmp_type;	        // 0x11	
@@ -14,8 +15,8 @@ struct IGMP_groupmessage
     unsigned    igmp_s     : 1;     // SUPRESS ROUTER FLAG
     unsigned    igmp_qrv   : 3;     // ROBUSTNESS VARIABLE
     uint8_t igmp_qqic;          // QUERY INTERVAL CODE
-    uint16_t    igmp_n;
-    Vector<in_addr> igmp_sources;
+    uint16_t    igmp_n;         // ALWAYS 0 in our implementation
+    //Vector<in_addr> igmp_sources; // WE DON'T NEED THIS
 };
 
 
@@ -28,6 +29,8 @@ struct IGMP_grouprecord
     Vector<in_addr> igmp_sources;   // UNICAST ADDRESSES
     //aux data
 };
+
+// Group membership report
 struct IGMP_reportmessage
 {
     uint8_t	igmp_type;	    // 0x22
