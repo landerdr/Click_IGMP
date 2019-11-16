@@ -5,8 +5,8 @@
 
 enum class IGMPTypes: uint8_t
 {
-    QUERY=0x11;
-    REPORT=0x22;
+    QUERY=0x11,
+    REPORT=0x22
 };
 
 /*
@@ -18,7 +18,7 @@ struct IGMP_query
 {
     IGMPTypes   type=IGMPTypes::QUERY;
     uint8_t	    max_resp_code;          // timout value 10x s
-    uint16_t	cksum;		
+    uint16_t	cksum=0;		
     in_addr	    multicast_address;      // MULTICAST ADRESS
     unsigned    resv  : 4;              // RESERVED
     unsigned    s     : 1;              // SUPRESS ROUTER FLAG
@@ -38,9 +38,7 @@ enum class IGMP_recordtype: unit8_t
     MODE_IS_INCLUDE = 1,
 	MODE_IS_EXCLUDE = 2,
 	CHANGE_TO_INCLUDE_MODE = 3,
-	CHANGE_TO_EXCLUDE_MODE = 4,
-	ALLOW_NEW_SOURCES = 5,
-	BLOCK_OLD_SOURCES = 6
+	CHANGE_TO_EXCLUDE_MODE = 4
 };
 
 // Group membership report
