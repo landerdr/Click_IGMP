@@ -38,7 +38,7 @@ void report_sender::join_group(const String &conf, Element* e, void* thunk, Erro
 
     output(0).push(q);
 }
-void leaveGroup(const String& conf){
+void report_sender::leaveGroup(const String& conf){
 
     id++;
     IPAddress grp = IPAddress("0.0.0.0")
@@ -82,6 +82,12 @@ void leaveGroup(const String& conf){
 
     output(0).push(packet);
 
+}
+
+void report_sender::add_handlers()
+{
+	add_write_handler("join", &join_group, (void *) 0);
+	add_write_handler("leave", &leave_group, (void *) 0);
 }
 
 CLICK_ENDDECLS

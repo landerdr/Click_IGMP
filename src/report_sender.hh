@@ -18,6 +18,8 @@ class report_sender : public Element {
 
     private:
 		void join_group(const String &conf, Element* e, void* thunk, ErrorHandler* errh);
+		void leave_group(const String &conf, Element* e, void* thunk, ErrorHandler* errh);
+		void add_handlers();
 
         IPAddress src;
         IPAddress dst;
