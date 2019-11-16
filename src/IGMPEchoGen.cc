@@ -75,7 +75,7 @@ Packet* IGMPEchoGen::pull(int){
     gr->type = IGMP_recordtype::MODE_IS_INCLUDE;
     gr->multicast_address = grp.in_addr();
 
-    format->igmp_cksum = click_in_cksum((unsigned char*)format, sizeof(IGMP_report) + sizeof(IGMP_grouprecord));
+    format->cksum = click_in_cksum((unsigned char*)format, sizeof(IGMP_report) + sizeof(IGMP_grouprecord));
 
     packet->set_dst_ip_anno(dst); 
     packet->set_ip_header(iph, sizeof(click_ip));

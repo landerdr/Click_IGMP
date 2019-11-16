@@ -27,11 +27,11 @@ void IGMP_Router::push(int input, Packet* p ){
             test* format = (struct test*) (iph+1);
             if(format->type==0x11){
                 click_chatter("gp");
-                IGMP_groupmessage* gm = (struct IGMP_groupmessage*) (iph + 1);
+                IGMP_query* gm = (struct IGMP_query*) (iph + 1);
             }
             if(format->type==0x22){
                 click_chatter("rp");
-                IGMP_reportmessage* rm = (struct IGMP_reportmessage*) (iph + 1);
+                IGMP_report* rm = (struct IGMP_report*) (iph + 1);
             }
 
         }

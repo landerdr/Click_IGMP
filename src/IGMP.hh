@@ -1,13 +1,21 @@
 #ifndef CLICKNET_IGMP_H
 #define CLICKNET_IGMP_H
 #include <clicknet/ip.h>
-#include <click/vector.cc>
 
-enum class IGMPTypes: uint8_t
+enum class IGMPTypes : uint8_t
 {
     QUERY=0x11,
     REPORT=0x22
 };
+
+enum class IGMP_recordtype : uint8_t
+{
+    MODE_IS_INCLUDE = 1,
+	MODE_IS_EXCLUDE = 2,
+	CHANGE_TO_INCLUDE_MODE = 3,
+	CHANGE_TO_EXCLUDE_MODE = 4
+};
+
 
 /*
  * Query
@@ -32,15 +40,6 @@ struct IGMP_query
  * Report
  * 
 */
-
-enum class IGMP_recordtype: unit8_t
-{
-    MODE_IS_INCLUDE = 1,
-	MODE_IS_EXCLUDE = 2,
-	CHANGE_TO_INCLUDE_MODE = 3,
-	CHANGE_TO_EXCLUDE_MODE = 4
-};
-
 // Group membership report
 struct IGMP_report
 {
