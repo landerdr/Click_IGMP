@@ -11,6 +11,16 @@ struct test {
 };
 
 enum Filtermode {Include,Exclude};
+
+class Group {
+public:
+    HashMap<in_addr,unsigned int> Include;
+    HashMap<in_addr,unsigned int> Exclude;
+    unsigned int grouptimer;
+    Filtermode mode;
+    int robustness;
+};
+
 class IGMP_Router : public Element {
 	public:
         IGMP_Router();
@@ -24,12 +34,7 @@ class IGMP_Router : public Element {
 		void push(int input, Packet* p );
 	private:
 //		HashMap<int, Vector<int>> ports;
-        in_addr addr;
-        HashMap<in_addr,unsigned int> Include;
-        HashMap<in_addr,unsigned int> Exclude;
-        unsigned int grouptimer;
-        Filtermode mode;
-        int robustness;
+        HashMap<in_addr, Group> active_groups;
 
 };
 
