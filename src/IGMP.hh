@@ -3,42 +3,64 @@
 #include <clicknet/ip.h>
 #include <click/vector.cc>
 
-
-// Membership QUERY message
-struct IGMP_groupmessage
+enum class IGMPTypes: uint8_t
 {
-    uint8_t	igmp_type;	        // 0x11	
-    uint8_t	igmp_code;	        // timout value 10x s
-    uint16_t	igmp_cksum;		
-    in_addr	    igmp_groupadress;   // MULTICAST ADRESS
-    unsigned    igmp_resv  : 4;     // RESERVED
-    unsigned    igmp_s     : 1;     // SUPRESS ROUTER FLAG
-    unsigned    igmp_qrv   : 3;     // ROBUSTNESS VARIABLE
-    uint8_t igmp_qqic;          // QUERY INTERVAL CODE
-    uint16_t    igmp_n;         // ALWAYS 0 in our implementation
-    //Vector<in_addr> igmp_sources; // WE DON'T NEED THIS
+    QUERY=0x11;
+    REPORT=0x22;
 };
 
-
-struct IGMP_grouprecord
+/*
+ * Query
+ * 
+*/
+// Membership QUERY message
+struct IGMP_query
 {
-    uint8_t	record_type;        // 1: INCLUDE MODE, 2: EXCLUDE MODE, 3: CHANGE TO INCLUDE, 4: CHANGE TO EXCLUDE	
-    uint8_t	igmp_auxdlen;	    // always 0	
-    uint16_t	igmp_n;     
-    in_addr     igmp_groupadress;   // MULTICAST ADDRESS
-    //Vector<in_addr> igmp_sources;   // UNICAST ADDRESSES
-    //aux data
+    IGMPTypes   type=IGMPTypes::QUERY;
+    uint8_t	    max_resp_code;          // timout value 10x s
+    uint16_t	cksum;		
+    in_addr	    multicast_address;      // MULTICAST ADRESS
+    unsigned    resv  : 4;              // RESERVED
+    unsigned    s     : 1;              // SUPRESS ROUTER FLAG
+    unsigned    qrv   : 3;              // ROBUSTNESS VARIABLE
+    uint8_t     qqic;                   // QUERY INTERVAL CODE
+    uint16_t    num_sources=0;          // ALWAYS 0 in our implementation
+    //Vector of sources                 // WE DON'T NEED THIS
+};
+
+/*
+ * Report
+ * 
+*/
+
+enum class IGMP_recordtype: unit8_t
+{
+    MODE_IS_INCLUDE = 1,
+	MODE_IS_EXCLUDE = 2,
+	CHANGE_TO_INCLUDE_MODE = 3,
+	CHANGE_TO_EXCLUDE_MODE = 4,
+	ALLOW_NEW_SOURCES = 5,
+	BLOCK_OLD_SOURCES = 6
 };
 
 // Group membership report
-struct IGMP_reportmessage
+struct IGMP_report
 {
-    uint8_t	igmp_type;	    // 0x22
-    uint8_t	igmp_resv1;     // RESERVED: 0
-    uint16_t	igmp_cksum;
-    uint16_t    igmp_resv2; // RESERVED: 0
-    uint16_t    igmp_n;
-    //Vector<IGMP_grouprecord> igmp_grouprecords;
+    IGMPTypes   type=IGMPTypes::REPORT;
+    uint8_t	    resv1=0;
+    uint16_t	cksum=0;
+    uint16_t    resv2=0;
+    uint16_t    num_group_records=0;
+    // Vector of grouprecords
+};
+struct IGMP_grouprecord
+{
+    IGMP_recordtype	type;	
+    uint8_t	    aux_data_len=0;     // ALWAYS 0	
+    uint16_t	num_sources=0;     
+    in_addr     multicast_address;  // MULTICAST ADDRESS
+    // Vector of sources            // UNICAST ADDRESSES
+    //aux data // Not used in our implementation
 };
 
 

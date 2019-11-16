@@ -39,17 +39,11 @@ Packet* IGMPEchoGen::pull(int){
     // iph->ip_tos = 0;
     // iph->ip_sum = click_in_cksum((unsigned char*) iph, sizeof(click_ip));
 
-    // IGMP_groupmessage* format = (struct IGMP_groupmessage*) (iph + 1); 
-    // format->igmp_type=0x11;
-    // format->igmp_code=0x64;
-    // format->igmp_groupadress=grp.in_addr();
-    // format->igmp_resv=0;
-    // format->igmp_qqic=0;
-    // format->igmp_s=0;
-    // format->igmp_qrv=0;
-    // format->igmp_n=0;
+    // IGMP_query* format = (struct IGMP_query*) (iph + 1); 
+    // format->max_resp_code=0x64;
+    // format->multicast_address=grp.in_addr();
 
-    // format->igmp_cksum = click_in_cksum((unsigned char*)format, sizeof(IGMP_groupmessage));
+    // format->cksum = click_in_cksum((unsigned char*)format, sizeof(IGMP_query));
 
     // packet->set_dst_ip_anno(dst); 
     // packet->set_ip_header(iph, sizeof(click_ip));
@@ -75,14 +69,13 @@ Packet* IGMPEchoGen::pull(int){
     iph->ip_tos = 0;
     iph->ip_sum = click_in_cksum((unsigned char*) iph, sizeof(click_ip));
 
-    IGMP_reportmessage* format = (struct IGMP_reportmessage*) (iph + 1); 
-    format->igmp_type = 0x22;
-    format->igmp_n = htons(1);
+    IGMP_report* format = (struct IGMP_report*) (iph + 1); 
+    format->num_group_records = htons(1);
     IGMP_grouprecord* gr = (struct IGMP_grouprecord*) (format + 1);
-    gr->record_type = 1;
-    gr->igmp_groupadress = grp.in_addr();
+    gr->type = IGMP_recordtype::MODE_IS_INCLUDE;
+    gr->multicast_address = grp.in_addr();
 
-    format->igmp_cksum = click_in_cksum((unsigned char*)format, sizeof(IGMP_reportmessage) + sizeof(IGMP_grouprecord));
+    format->igmp_cksum = click_in_cksum((unsigned char*)format, sizeof(IGMP_report) + sizeof(IGMP_grouprecord));
 
     packet->set_dst_ip_anno(dst); 
     packet->set_ip_header(iph, sizeof(click_ip));
