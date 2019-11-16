@@ -2,7 +2,26 @@
 #include <click/args.hh>
 #include <click/error.hh>
 #include "report_sender.hh"
+#include <vector>
 CLICK_DECLS
+
+std::vector<String> split(const String& s, char delim) {
+    std::vector<String> v;
+    String buf;
+    
+    for (char c: s) {
+        if (c == delim) {
+            if (buf.length() > 0) v.push_back(buf);
+            buf = "";
+        } else {
+            buf += c;
+        }
+    }
+    if (buf.length() > 0) v.push_back(buf);
+    
+    return v;
+}
+
 report_sender::report_sender()
 {}
 
@@ -15,13 +34,21 @@ int report_sender::configure(Vector<String> &conf, ErrorHandler *errh) {
 }
 
 void report_sender::push(int interface, Packet* p ){
-    output(interface).push(p);
+    // output(interface).push(p);
+    p.kill();
 }
 
-void report_sender::join_group(const String &conf, Element* e, void* thunk, ErrorHandler* errh)
+int report_sender::join_group(const String &conf, Element* e, void* thunk, ErrorHandler* errh)
 {
     IPAddress groupaddress;
-    if (Args(conf, this, errh).read_mp("GROUP", groupaddress).complete() < 0) return -1;
+    std::vector<String> parts = split(conf, ' ');
+
+    if (parts.size() != 2) return -1;
+    if (parts[0] == String("GROUP")) {
+		groupaddress = IPAddress(parts[1]);
+	}  else {
+		return -1;
+	}
 
     int size = sizeof(IGMP_report) + sizeof(IGMP_grouprecord);
     WritablePacket *packet  = Packet::make(size);
@@ -36,8 +63,24 @@ void report_sender::join_group(const String &conf, Element* e, void* thunk, Erro
     
     format->cksum = click_in_cksum((unsigned char*)format, size);
 
-    output(0).push(q);
+    e->output(0).push(q);
+	return 0;
 }
+
+int report_sender::leave_group(const String &conf, Element* e, void* thunk, ErrorHandler* errh)
+{
+    IPAddress groupaddress;
+    std::vector<String> parts = split(conf, ' ');
+    if (parts.size() != 2) return -1;
+    if (parts[0] == String("GROUP")) {
+		groupaddress = IPAddress(parts[1]);
+	}  else {
+		return -1;
+	}
+
+    int size = sizeof(IGMP_report) + sizeof(IGMP_grouprecord);
+    WritablePacket *packet  = Packet::make(size);
+    memset(packet->data(), 0, size);
 void report_sender::leaveGroup(const String& conf){
 
     id++;
@@ -71,23 +114,20 @@ void report_sender::leaveGroup(const String& conf){
     format->num_group_records = htons(1);
     IGMP_grouprecord* gr = (struct IGMP_grouprecord*) (format + 1);
     gr->type = IGMP_recordtype::MODE_IS_INCLUDE;
-    gr->multicast_address = grp.in_addr();
-    int siz= sizeof(IGMP_report) + sizeof(IGMP_grouprecord);
-//    click_chatter(std::to_string(siz).c_str());
-    format->cksum = click_in_cksum((unsigned char*)format, siz);
+    gr->multicast_address = groupaddress.in_addr();
+    
+    format->cksum = click_in_cksum((unsigned char*)format, size);
 
-    packet->set_dst_ip_anno(dst);
-    packet->set_ip_header(iph, sizeof(click_ip));
-    packet->set_anno_u32(0, dst);
+    e->output(0).push(packet);
 
-    output(0).push(packet);
+	return 0;
 
 }
 
 void report_sender::add_handlers()
 {
-	add_write_handler("join", &join_group, (void *) 0);
-	add_write_handler("leave", &leave_group, (void *) 0);
+	add_write_handler("join", join_group, (void *) 0);
+	add_write_handler("leave", leave_group, (void *) 0);
 }
 
 CLICK_ENDDECLS

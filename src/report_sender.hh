@@ -17,8 +17,8 @@ class report_sender : public Element {
         void push(int interface, Packet* p );
 
     private:
-		void join_group(const String &conf, Element* e, void* thunk, ErrorHandler* errh);
-		void leave_group(const String &conf, Element* e, void* thunk, ErrorHandler* errh);
+		static int join_group(const String &conf, Element* e, void* thunk, ErrorHandler* errh);
+		static int leave_group(const String &conf, Element* e, void* thunk, ErrorHandler* errh);
 		void add_handlers();
 
         IPAddress src;
