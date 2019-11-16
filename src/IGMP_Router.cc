@@ -8,7 +8,7 @@ int findKey(Vector<std::tuple<in_addr, unsigned int>> v, in_addr k)
 {
     for (int i=0; i<v.size(); i++)
     {
-        if (v[i]->first == k)
+        if (std::get<0>(v[i]) == k)
         {
             return i;
         }
@@ -20,7 +20,7 @@ int findKey(Vector<std::tuple<in_addr, Group*>> v, in_addr k)
 {
     for (int i=0; i<v.size(); i++)
     {
-        if (v[i]->first == k)
+        if (std::get<0>(v[i]) == k)
         {
             return i;
         }
@@ -51,19 +51,19 @@ void IGMP_Router::push(int input, Packet* p ){
 
             click_ip* iph = (click_ip*) n->data();
             test* format = (struct test*) (iph+1);
-            if(format->type==IGMPTypes::QUERY){
+            if(format->type==0x11){
                 click_chatter("gp");
                 IGMP_query* gm = (struct IGMP_query*) (iph + 1);
             }
-            if(format->type==IGMPTypes::REPORT){
+            if(format->type==0x22){
                 click_chatter("rp");
                 IGMP_report* rm = (struct IGMP_report*) (iph + 1);
                 IGMP_grouprecord* grouprecord =(struct IGMP_grouprecord*) (rm+1);
                 if(grouprecord->type==IGMP_recordtype::MODE_IS_INCLUDE){
                     //leave
-                    int it = findKey(active_groups,grouprecord->multicast_address)
+                    int it = findKey(active_groups,grouprecord->multicast_address);
                     if ( it!=-1){
-                        Group* p = active_groups[it][4];
+                        Group* p = std::get<1>(active_groups[it]);
                         int it2 =findKey(p->Include,iph->ip_src);
                         if(it2!=-1){
                             p->Include.erase(p->Include.begin()+it2);
@@ -74,7 +74,7 @@ void IGMP_Router::push(int input, Packet* p ){
                             }
                         }
 
-                        int it2 =findKey(p->Exclude,iph->ip_src);
+                        it2 =findKey(p->Exclude,iph->ip_src);
                         if(it2!=-1){
                             p->Exclude.erase(p->Exclude.begin()+it2);
 
@@ -100,12 +100,12 @@ void IGMP_Router::push(int input, Packet* p ){
 
                         }
                         else{
-                            grp = active_groups[it][1];
+                            grp = std::get<1>(active_groups[it]);
 
                         }
 
                         if (!(findKey(grp->Include,iph->ip_src)||findKey(grp->Exclude,iph->ip_src))){
-                            grp->Include.push_back(std::make_tuple(iph->ip_src,200))
+                            grp->Include.push_back(std::make_tuple(iph->ip_src,200));
                         }
 
 
@@ -126,11 +126,11 @@ void IGMP_Router::push(int input, Packet* p ){
         int pos = findKey(active_groups, n->ip_header()->ip_dst);
         if (pos != -1)
         {
-            Group* g = active_groups[pos]->second;
+            Group* g = std::get<1>(active_groups[pos]);
             for (auto const& i : g->Include)
             {
                 WritablePacket* k = p->uniqueify();
-                k->ip_header()->ip_dst = i.first;
+                k->ip_header()->ip_dst = std::get<0>(i);
                 output(0).push(k);
             }
             p->kill();

@@ -22,7 +22,7 @@ public:
     int robustness;
 
     bool isEmpty(){
-        return Include.size()==0 && Exclude.size()==0
+        return Include.size()==0 && Exclude.size()==0;
 
     };
 };
