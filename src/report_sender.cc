@@ -36,7 +36,29 @@ void report_sender::join_group(const String &conf, Element* e, void* thunk, Erro
     
     format->cksum = click_in_cksum((unsigned char*)format, size);
 
-    output(0).push(q);
+    output(0).push(packet);
+}
+
+void leave_group(const String& conf)
+{
+    IPAddress groupaddress;
+    if (Args(conf, this, errh).read_mp("GROUP", groupaddress).complete() < 0) return -1;
+
+    int size = sizeof(IGMP_report) + sizeof(IGMP_grouprecord);
+    WritablePacket *packet  = Packet::make(size);
+    memset(packet->data(), 0, size);
+
+    IGMP_report* format = (struct IGMP_report*) packet->data();
+    *format = IGMP_report();
+    format->num_group_records = htons(1);
+    IGMP_grouprecord* gr = (struct IGMP_grouprecord*) (format + 1);
+    gr->type = IGMP_recordtype::MODE_IS_INCLUDE;
+    gr->multicast_address = groupaddress.in_addr();
+    
+    format->cksum = click_in_cksum((unsigned char*)format, size);
+
+    output(0).push(packet);
+
 }
 
 CLICK_ENDDECLS

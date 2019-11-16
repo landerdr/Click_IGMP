@@ -21,6 +21,7 @@ class report_sender : public Element {
 
         IPAddress src;
         IPAddress dst;
+        int id = 0;
 
 
 };
