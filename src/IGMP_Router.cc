@@ -19,7 +19,7 @@ int IGMP_Router::configure(Vector<String> &conf, ErrorHandler *errh) {
 void IGMP_Router::push(int input, Packet* p ){
 	if (input == 0){
         WritablePacket* n = p->uniqueify();
-        if(n->ip_header()->ip_p ==2){
+        if(n->ip_header()->ip_p == 2){
 
             click_chatter("testing123");
 
@@ -91,9 +91,22 @@ void IGMP_Router::push(int input, Packet* p ){
 
 
             }
-
+            p->kill();
         }
 
+        auto pos = active_groups.find(n->ip_header()->ip_dst);
+        if (pos != active_groups.end())
+        {
+            Group* g = pos->second;
+            for (auto const& i : g->Include)
+            {
+                WritablePacket* k = p->uniqueify();
+                k->ip_header()->ip_dst = i.first;
+                output(0).push(k);
+            }
+            p->kill();
+            return;
+        }
         output(0).push(p);
 	}
 }

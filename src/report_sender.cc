@@ -35,7 +35,7 @@ int report_sender::configure(Vector<String> &conf, ErrorHandler *errh) {
 
 void report_sender::push(int interface, Packet* p ){
     // output(interface).push(p);
-    p.kill();
+    p->kill();
 }
 
 int report_sender::join_group(const String &conf, Element* e, void* thunk, ErrorHandler* errh)
