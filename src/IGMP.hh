@@ -26,7 +26,7 @@ struct IGMP_grouprecord
     uint8_t	igmp_auxdlen;	    // always 0	
     uint16_t	igmp_n;     
     in_addr     igmp_groupadress;   // MULTICAST ADDRESS
-    Vector<in_addr> igmp_sources;   // UNICAST ADDRESSES
+    //Vector<in_addr> igmp_sources;   // UNICAST ADDRESSES
     //aux data
 };
 
@@ -38,7 +38,7 @@ struct IGMP_reportmessage
     uint16_t	igmp_cksum;
     uint16_t    igmp_resv2; // RESERVED: 0
     uint16_t    igmp_n;
-    Vector<IGMP_grouprecord> igmp_grouprecords;
+    //Vector<IGMP_grouprecord> igmp_grouprecords;
 };
 
 

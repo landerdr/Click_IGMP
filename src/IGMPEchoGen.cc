@@ -19,13 +19,49 @@ Packet* IGMPEchoGen::pull(int){
     //generate packet
     id++;
 
-    WritablePacket *packet  = Packet::make(32);
+    // WritablePacket *packet  = Packet::make(32);
+    // if (packet == 0) {
+    //     click_chatter("cannot make packet!");
+    //     return nullptr;
+    // }
+    
+    // memset(packet->data(), 0, 32);
+
+    // click_ip* iph = (click_ip*) packet->data();
+    // iph->ip_v = 4;
+    // iph->ip_hl = 5;
+    // iph->ip_src = src.in_addr();
+    // iph->ip_dst = dst.in_addr();
+    // iph->ip_p = 2;
+    // iph->ip_ttl = 1;
+    // iph->ip_id = htons(id);
+    // iph->ip_len = htons(32);
+    // iph->ip_tos = 0;
+    // iph->ip_sum = click_in_cksum((unsigned char*) iph, sizeof(click_ip));
+
+    // IGMP_groupmessage* format = (struct IGMP_groupmessage*) (iph + 1); 
+    // format->igmp_type=0x11;
+    // format->igmp_code=0x64;
+    // format->igmp_groupadress=grp.in_addr();
+    // format->igmp_resv=0;
+    // format->igmp_qqic=0;
+    // format->igmp_s=0;
+    // format->igmp_qrv=0;
+    // format->igmp_n=0;
+
+    // format->igmp_cksum = click_in_cksum((unsigned char*)format, sizeof(IGMP_groupmessage));
+
+    // packet->set_dst_ip_anno(dst); 
+    // packet->set_ip_header(iph, sizeof(click_ip));
+    // packet->set_anno_u32(0, dst);µ
+
+    WritablePacket *packet  = Packet::make(36);
     if (packet == 0) {
         click_chatter("cannot make packet!");
         return nullptr;
     }
     
-    memset(packet->data(), 0, 32);
+    memset(packet->data(), 0, 36);
 
     click_ip* iph = (click_ip*) packet->data();
     iph->ip_v = 4;
@@ -39,17 +75,14 @@ Packet* IGMPEchoGen::pull(int){
     iph->ip_tos = 0;
     iph->ip_sum = click_in_cksum((unsigned char*) iph, sizeof(click_ip));
 
-    IGMP_groupmessage* format = (struct IGMP_groupmessage*) (iph + 1); 
-    format->igmp_type=0x11;
-    format->igmp_code=0x64;
-    format->igmp_groupadress=grp.in_addr();
-    format->igmp_resv=0;
-    format->igmp_qqic=0;
-    format->igmp_s=0;
-    format->igmp_qrv=0;
-    format->igmp_n=0;
+    IGMP_reportmessage* format = (struct IGMP_reportmessage*) (iph + 1); 
+    format->igmp_type = 0x22;
+    format->igmp_n = htons(1);
+    IGMP_grouprecord* gr = (struct IGMP_grouprecord*) (format + 1);
+    gr->record_type = 1;
+    gr->igmp_groupadress = grp.in_addr();
 
-    format->igmp_cksum = click_in_cksum((unsigned char*)format, sizeof(IGMP_groupmessage));
+    format->igmp_cksum = click_in_cksum((unsigned char*)format, sizeof(IGMP_reportmessage) + sizeof(IGMP_grouprecord));
 
     packet->set_dst_ip_anno(dst); 
     packet->set_ip_header(iph, sizeof(click_ip));

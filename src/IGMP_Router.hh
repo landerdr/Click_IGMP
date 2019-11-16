@@ -8,8 +8,8 @@ CLICK_DECLS
 
 struct test {
     uint8_t type;
-    String data;
 };
+
 enum Filtermode {Include,Exclude};
 class IGMP_Router : public Element {
 	public:
