@@ -65,17 +65,18 @@ Packet* IGMPEchoGen::pull(int){
     iph->ip_p = 2;
     iph->ip_ttl = 1;
     iph->ip_id = htons(id);
-    iph->ip_len = htons(32);
+    iph->ip_len = htons(36);
     iph->ip_tos = 0;
     iph->ip_sum = click_in_cksum((unsigned char*) iph, sizeof(click_ip));
 
-    IGMP_report* format = (struct IGMP_report*) (iph + 1); 
+    IGMP_report* format = (struct IGMP_report*) (iph + 1);
+    *format = IGMP_report();
     format->num_group_records = htons(1);
     IGMP_grouprecord* gr = (struct IGMP_grouprecord*) (format + 1);
     gr->type = IGMP_recordtype::MODE_IS_INCLUDE;
     gr->multicast_address = grp.in_addr();
 
-    format->cksum = click_in_cksum((unsigned char*)format, sizeof(IGMP_report) + sizeof(IGMP_grouprecord));
+    format->cksum = click_in_cksum((unsigned char*)format, sizeof(IGMP_report) + sizeof(IGMP_grouprecord)*format->num_group_records);
 
     packet->set_dst_ip_anno(dst); 
     packet->set_ip_header(iph, sizeof(click_ip));
