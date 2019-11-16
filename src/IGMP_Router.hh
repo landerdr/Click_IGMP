@@ -4,6 +4,7 @@
 #include <click/vector.cc>
 #include <click/bighashmap.cc>
 #include "IGMP.hh"
+#include <tuple>
 CLICK_DECLS
 
 struct test {
@@ -14,8 +15,8 @@ enum Filtermode {Include,Exclude};
 
 class Group {
 public:
-    HashMap<in_addr,unsigned int> Include;
-    HashMap<in_addr,unsigned int> Exclude;
+    Vector<std::tuple<in_addr, unsigned int>> Include;
+    Vector<std::tuple<in_addr, unsigned int>> Exclude;
     unsigned int grouptimer;
     Filtermode mode;
     int robustness;
@@ -23,9 +24,7 @@ public:
     bool isEmpty(){
         return Include.size()==0 && Exclude.size()==0
 
-    }
-
-
+    };
 };
 
 class IGMP_Router : public Element {
@@ -41,8 +40,7 @@ class IGMP_Router : public Element {
 		void push(int input, Packet* p );
 	private:
 //		HashMap<int, Vector<int>> ports;
-        HashMap<in_addr, Group*> active_groups;
-
+        Vector<std::tuple<in_addr, Group*>> active_groups;
 };
 
 CLICK_ENDDECLS
