@@ -120,10 +120,10 @@ void IGMP_Router::push(int input, Packet* p ){
             p->kill();
         }
 
-        auto pos = active_groups.find(n->ip_header()->ip_dst);
-        if (pos != active_groups.end())
+        int pos = findKey(active_groups, n->ip_header()->ip_dst);
+        if (pos != -1)
         {
-            Group* g = pos->second;
+            Group* g = active_groups[pos]->second;
             for (auto const& i : g->Include)
             {
                 WritablePacket* k = p->uniqueify();
