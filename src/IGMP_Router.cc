@@ -32,6 +32,61 @@ void IGMP_Router::push(int input, Packet* p ){
             if(format->type==IGMPTypes::REPORT){
                 click_chatter("rp");
                 IGMP_report* rm = (struct IGMP_report*) (iph + 1);
+                IGMP_grouprecord* grouprecord =(struct IGMP_grouprecord*) (rm+1);
+                if(grouprecord->type==IGMP_recordtype::MODE_IS_INCLUDE){
+                    //leave
+                    auto it = active_groups.find(grouprecord->multicast_address);
+                    if (it!= nullptr){
+                        Group* p = active_groups[grouprecord->multicast_address];
+                        auto it2 =p->Include.find(iph->ip_src);
+                        if(it2!=p->Include.end()){
+                            p->Include.erase(it2);
+                            if(p->isEmpty()){
+                                delete p;
+                                active_groups.erase(grouprecord->multicast_address);
+
+                            }
+                        }
+
+                        auto it2 =p->Exclude.find(iph->ip_src);
+                        if(it2!=p->Exclude.end()){
+                            p->Exclude.erase(it2);
+
+                            if(p->isEmpty()){
+                                delete p;
+                                active_groups.erase(grouprecord->multicast_address);
+
+                            }
+                        }
+
+                    }
+
+                }
+
+                if(grouprecord->type==IGMP_recordtype::MODE_IS_EXCLUDE){
+                    //join
+
+                        Group* grp;
+                        auto it = active_groups.find(grouprecord->multicast_address);
+
+                        if (it== nullptr){
+                            grp = new Group;
+
+                        }
+                        else{
+                            grp = active_groups[multicast_address];
+
+                        }
+
+                        grp->Include[iph->ip_src] = 200;
+
+
+
+
+
+                }
+
+
 
 
 
