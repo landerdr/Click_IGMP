@@ -61,26 +61,26 @@ void IGMP_Router::push(int input, Packet* p ){
                 IGMP_grouprecord* grouprecord =(struct IGMP_grouprecord*) (rm+1);
                 if(grouprecord->type==IGMP_recordtype::MODE_IS_INCLUDE){
                     //leave
-                    auto it = active_groups.find(grouprecord->multicast_address);
-                    if (it!= nullptr){
-                        Group* p = active_groups[grouprecord->multicast_address];
-                        auto it2 =p->Include.find(iph->ip_src);
-                        if(it2!=p->Include.end()){
-                            p->Include.erase(it2);
+                    int it = findKey(active_groups,grouprecord->multicast_address)
+                    if ( it!=-1){
+                        Group* p = active_groups[it][4];
+                        int it2 =findKey(p->Include,iph->ip_src);
+                        if(it2!=-1){
+                            p->Include.erase(p->Include.begin()+it2);
                             if(p->isEmpty()){
                                 delete p;
-                                active_groups.erase(grouprecord->multicast_address);
+                                active_groups.erase(active_groups.begin()+it);
 
                             }
                         }
 
-                        auto it2 =p->Exclude.find(iph->ip_src);
-                        if(it2!=p->Exclude.end()){
-                            p->Exclude.erase(it2);
+                        int it2 =findKey(p->Exclude,iph->ip_src);
+                        if(it2!=-1){
+                            p->Exclude.erase(p->Exclude.begin()+it2);
 
                             if(p->isEmpty()){
                                 delete p;
-                                active_groups.erase(grouprecord->multicast_address);
+                                active_groups.erase(active_groups.begin()+it);
 
                             }
                         }
@@ -93,18 +93,21 @@ void IGMP_Router::push(int input, Packet* p ){
                     //join
 
                         Group* grp;
-                        auto it = active_groups.find(grouprecord->multicast_address);
+                        int it = findKey(active_groups,grouprecord->multicast_address);
 
-                        if (it== nullptr){
+                        if (it== -1){
                             grp = new Group;
 
                         }
                         else{
-                            grp = active_groups[multicast_address];
+                            grp = active_groups[it][1];
 
                         }
 
-                        grp->Include[iph->ip_src] = 200;
+                        if (!(findKey(grp->Include,iph->ip_src)||findKey(grp->Exclude,iph->ip_src))){
+                            grp->Include.push_back(std::make_tuple(iph->ip_src,200))
+                        }
+
 
 
 
