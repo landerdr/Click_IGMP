@@ -4,6 +4,18 @@
 #include "IGMP_Router.hh"
 CLICK_DECLS
 
+int findKey(Vector<std::tuple<in_addr,unsigned int>> v, in_addr k)
+{
+    for (int i=0; i<v.size(); i++)
+    {
+        if (v[i]->first == k)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
 IGMP_Router::IGMP_Router()
 {}
 
