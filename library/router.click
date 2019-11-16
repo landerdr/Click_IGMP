@@ -15,6 +15,8 @@
 elementclass Router {
 	$server_address, $client1_address, $client2_address |
 
+	igmp_r :: IGMP_Router()
+
 	// Shared IP input path and routing table
 	ip :: Strip(14)
 		-> CheckIPHeader
@@ -38,7 +40,7 @@ elementclass Router {
 
 	server_arpq :: ARPQuerier($server_address) -> output;
 	server_class[1] -> arpt[0] -> [1]server_arpq;
-	server_class[2] -> Paint(1) -> ip;
+	server_class[2] -> Paint(1) -> igmp_r -> ip;
 
 
 	// Input and output paths for interface 1
@@ -50,7 +52,7 @@ elementclass Router {
 
 	client1_arpq :: ARPQuerier($client1_address) -> [1]output;
 	client1_class[1] -> arpt[1] -> [1]client1_arpq;
-	client1_class[2] -> Paint(2) -> ip;
+	client1_class[2] -> Paint(2) -> igmp_r -> ip;
 
 
 	// Input and output paths for interface 2
@@ -62,7 +64,7 @@ elementclass Router {
 
 	client2_arpq :: ARPQuerier($client2_address) -> [2]output;
 	client2_class[1] -> arpt[2] -> [1]client2_arpq;
-	client2_class[2] -> Paint(3) -> ip;
+	client2_class[2] -> Paint(3) -> igmp_r -> ip;
 
 
 	// Local delivery
