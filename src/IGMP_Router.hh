@@ -34,7 +34,7 @@ class IGMP_Router : public Element {
 		void push(int input, Packet* p );
 	private:
 //		HashMap<int, Vector<int>> ports;
-        HashMap<in_addr, Group> active_groups;
+        HashMap<in_addr, Group*> active_groups;
 
 };
 
