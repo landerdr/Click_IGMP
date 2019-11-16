@@ -25,13 +25,16 @@ void IGMP_Router::push(int input, Packet* p ){
 
             click_ip* iph = (click_ip*) n->data();
             test* format = (struct test*) (iph+1);
-            if(format->type==0x11){
+            if(format->type==IGMPTypes::QUERY){
                 click_chatter("gp");
                 IGMP_query* gm = (struct IGMP_query*) (iph + 1);
             }
-            if(format->type==0x22){
+            if(format->type==IGMPTypes::REPORT){
                 click_chatter("rp");
                 IGMP_report* rm = (struct IGMP_report*) (iph + 1);
+
+
+
             }
 
         }
