@@ -2,7 +2,7 @@
 #include <click/args.hh>
 #include <click/error.hh>
 #include "IGMPEchoGen.hh"
-
+#include <string>
 CLICK_DECLS
 IGMPEchoGen::IGMPEchoGen()
 {}
@@ -75,8 +75,9 @@ Packet* IGMPEchoGen::pull(int){
     IGMP_grouprecord* gr = (struct IGMP_grouprecord*) (format + 1);
     gr->type = IGMP_recordtype::MODE_IS_INCLUDE;
     gr->multicast_address = grp.in_addr();
-
-    format->cksum = click_in_cksum((unsigned char*)format, sizeof(IGMP_report) + sizeof(IGMP_grouprecord)*format->num_group_records);
+    int siz= sizeof(IGMP_report) + sizeof(IGMP_grouprecord);
+//    click_chatter(std::to_string(siz).c_str());
+    format->cksum = click_in_cksum((unsigned char*)format, siz);
 
     packet->set_dst_ip_anno(dst); 
     packet->set_ip_header(iph, sizeof(click_ip));
