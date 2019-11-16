@@ -14,14 +14,16 @@ class report_sender : public Element {
 		const char *processing() const	{ return PUSH; }
 		int configure(Vector<String>&, ErrorHandler*);
 
-        void push(int  interface,Packet* p );
+        void push(int interface, Packet* p );
 
     private:
+		static int join_group(const String &conf, Element* e, void* thunk, ErrorHandler* errh);
+		static int leave_group(const String &conf, Element* e, void* thunk, ErrorHandler* errh);
+		void add_handlers();
+
         IPAddress src;
         IPAddress dst;
         int id = 0;
-
-
 };
 
 CLICK_ENDDECLS
