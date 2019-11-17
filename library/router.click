@@ -15,8 +15,6 @@
 elementclass Router {
 	$server_address, $client1_address, $client2_address |
 
-	igmp_r :: IGMP_Router()
-
 	// Shared IP input path and routing table
 	ip :: Strip(14)
 		-> CheckIPHeader
@@ -26,7 +24,8 @@ elementclass Router {
 					$client2_address:ip/32 0,
 					$server_address:ipnet 1,
 					$client1_address:ipnet 2,
-					$client2_address:ipnet 3);
+					$client2_address:ipnet 3,
+					224.0.0.0/4 4);
 	
 	// ARP responses are copied to each ARPQuerier and the host.
 	arpt :: Tee (3);
@@ -40,7 +39,7 @@ elementclass Router {
 
 	server_arpq :: ARPQuerier($server_address) -> output;
 	server_class[1] -> arpt[0] -> [1]server_arpq;
-	server_class[2] -> Paint(1) -> igmp_r -> ip;
+	server_class[2] -> igmp0::IPClassifier(ip proto 2, -)[1] -> Paint(1) -> ip;
 
 
 	// Input and output paths for interface 1
@@ -52,7 +51,7 @@ elementclass Router {
 
 	client1_arpq :: ARPQuerier($client1_address) -> [1]output;
 	client1_class[1] -> arpt[1] -> [1]client1_arpq;
-	client1_class[2] -> Paint(2) -> igmp_r -> ip;
+	client1_class[2] -> igmp1::IPClassifier(ip proto 2, -)[1] -> Paint(2) -> ip;
 
 
 	// Input and output paths for interface 2
@@ -64,7 +63,7 @@ elementclass Router {
 
 	client2_arpq :: ARPQuerier($client2_address) -> [2]output;
 	client2_class[1] -> arpt[2] -> [1]client2_arpq;
-	client2_class[2] -> Paint(3) -> igmp_r -> ip;
+	client2_class[2] -> igmp2::IPClassifier(ip proto 2, -)[1] -> Paint(3) -> ip;
 
 
 	// Local delivery
@@ -114,4 +113,18 @@ elementclass Router {
 	client2_ipgw[1]  -> ICMPError($client2_address, parameterproblem) -> rt;
 	client2_ttl[1]   -> ICMPError($client2_address, timeexceeded) -> rt;
 	client2_frag[1]  -> ICMPError($client2_address, unreachable, needfrag) -> rt;
+
+	rt[4] -> mct :: Tee (3)
+
+	// Server trafic
+	mct[0] -> igmpr0 :: IGMP_Router() -> server_arpq;
+	igmp0[0] -> Strip(14) -> igmpr0;
+	// Client 1 traffic
+	mct[1] -> igmpr1 :: IGMP_Router() -> client1_arpq;
+	igmp1[0] -> Strip(14) -> igmpr1;
+	// Client 2 traffic
+	mct[2] -> igmpr2 :: IGMP_Router() -> client2_arpq;
+	igmp2[0] -> Strip(14) -> igmpr2;
+
+
 }
