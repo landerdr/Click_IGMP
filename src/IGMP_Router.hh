@@ -38,7 +38,10 @@ class IGMP_Router : public Element {
 		int configure(Vector<String>&, ErrorHandler*);
 		
 		void push(int input, Packet* p );
+        void run_timer(Timer* t);
+        
 	private:
+        Timer timer;
 //		HashMap<int, Vector<int>> ports;
         Vector<std::tuple<in_addr, Group*>> active_groups;
 };

@@ -30,7 +30,7 @@ int findKey(Vector<std::tuple<in_addr, Group*>> v, in_addr k)
 
 
 
-IGMP_Router::IGMP_Router()
+IGMP_Router::IGMP_Router() : timer(this)
 {}
 
 IGMP_Router::~ IGMP_Router()
@@ -40,6 +40,35 @@ int IGMP_Router::configure(Vector<String> &conf, ErrorHandler *errh) {
 //    if (Args(conf, this, errh).read_m("MAXPACKETSIZE", maxSize).complete() < 0) return -1;
 //	if (maxSize <= 0) return errh->error("maxsize should be larger than 0");
 	return 0;
+}
+
+void IGMP_Router::run_timer(Timer* t)
+{
+    timer.schedule_after_msec(1000);
+
+    int size = sizeof(IGMP_query);
+    WritablePacket *packet = Packet::make(size);
+    memset(packet->data(), 0, size);
+
+    IGMP_query* format = (struct IGMP_query*) packet->data();
+    *format = IGMP_query();
+    format->max_resp_code = htons(20); // timout value in cs: 20 -> 2s
+    format->qqic = 60; // query interval (s)
+    
+    format->cksum = click_in_cksum((unsigned char*)format, size);
+
+    e->output(0).push(packet);
+	return 0;
+
+    for (int i=0; i<active_groups.length(); i++)
+    {
+        active_groups[i].second().grouptimer--;
+        if (active_groups[i].second().grouptimer == 0)
+        {
+            active_groups[i].second().grouptimer = 60;
+            
+        }
+    }
 }
 
 void IGMP_Router::push(int input, Packet* p ){
