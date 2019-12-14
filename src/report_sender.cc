@@ -2,11 +2,35 @@
 #include <click/args.hh>
 #include <click/error.hh>
 #include "report_sender.hh"
-#include <vector>
 CLICK_DECLS
 
-std::vector<String> split(const String& s, char delim) {
-    std::vector<String> v;
+
+int findK(Vector<clientTimer> v, in_addr k)
+{
+    for (int i=0; i<v.size(); i++)
+    {
+        if (v[i].address == k)
+        {
+            return i;
+        }
+    }
+    return -1;
+};
+
+int findK(Vector<Group*> v, in_addr k)
+{
+    for (int i=0; i<v.size(); i++)
+    {
+        if (v[i]->groupaddress == k)
+        {
+            return i;
+        }
+    }
+    return -1;
+};
+
+Vector<String> split(const String& s, char delim) {
+    Vector<String> v;
     String buf;
     
     for (char c: s) {
@@ -22,7 +46,7 @@ std::vector<String> split(const String& s, char delim) {
     return v;
 }
 
-report_sender::report_sender()
+report_sender::report_sender() : timer(this)
 {}
 
 report_sender::~ report_sender()
@@ -30,10 +54,14 @@ report_sender::~ report_sender()
 
 int report_sender::configure(Vector<String> &conf, ErrorHandler *errh) {
     if (Args(conf, this, errh).read_mp("SOURCE", src).read_mp("DESTINATION", dst).complete() < 0) return -1;
+	timer.initialize(this);
+	timer.schedule_after_msec(100);
+	
     return 0;
 }
 
 void report_sender::push(int interface, Packet* p ){
+    
     // output(interface).push(p);
     WritablePacket* n = p->uniqueify();
     if(n->ip_header()->ip_p == 2)
@@ -44,8 +72,49 @@ void report_sender::push(int interface, Packet* p ){
         if(format->type==0x11){
             //click_chatter("gp");
             IGMP_query* gm = (struct IGMP_query*) (iph + 1);
+            in_addr groupadd = gm->multicast_address;
+	    
 
+            int it = findK( groups , groupadd);
+	    
 
+            Group* group;
+            if (it==-1){
+                group = new Group;
+            }else{
+                group = groups[it];
+            }
+	    
+            group->groupaddress = groupadd;
+            group->grouptimer = gm->max_resp_code;
+            group->mode = Filtermode::Include;
+            group->robustness = gm->qrv;
+	   
+
+	    if(!group->isEmpty()){
+		    unsigned int random = gm->max_resp_code/2;
+		    clientTimer ct;
+		    ct.time = random;
+		    ct.address = groupadd;
+		    int timerit = findK(timers, groupadd);
+		    if(timerit ==-1){
+
+			timers.push_back(ct);
+		    }else{
+			if(timers[timerit].time>ct.time){
+				timers[timerit] = ct;
+			}
+			
+
+		    }
+	    }
+            if (it==-1 && groupadd!= IPAddress("224.0.0.1").in_addr()){
+		//click_chatter("affaff");
+                groups.push_back(group);
+
+		
+		
+            }
         }
     }
 
@@ -55,10 +124,63 @@ void report_sender::push(int interface, Packet* p ){
     p->kill();
 }
 
+Vector<in_addr> pass1Timer(Vector<clientTimer>& v){
+Vector<in_addr> retval;
+Vector<int> delval;
+for(int i =0; i <v.size();i++){
+	v[i].time--;
+	if (v[i].time ==0){
+		delval.push_back(i);
+		retval.push_back(v[i].address);
+
+	}
+
+}
+for (int j = delval.size()-1; j>=0;j--){
+	v.erase(v.begin()+delval[j]);
+}
+
+
+return retval;
+}
+
+void report_sender::run_timer(Timer* t)
+{
+timer.schedule_after_msec(100);
+Vector<in_addr> addrs= pass1Timer(timers);
+for (in_addr add: addrs){
+//respond
+if(add != IPAddress("224.0.0.1").in_addr()){
+    int size = sizeof(IGMP_report) + sizeof(IGMP_grouprecord);
+    WritablePacket *packet  = Packet::make(size);
+    memset(packet->data(), 0, size);
+
+    IGMP_report* format = (struct IGMP_report*) packet->data();
+    *format = IGMP_report();
+    format->num_group_records = htons(1);
+    IGMP_grouprecord* gr = (struct IGMP_grouprecord*) (format + 1);
+    gr->type = IGMP_recordtype::MODE_IS_EXCLUDE;
+    gr->multicast_address = add;
+    
+    format->cksum = click_in_cksum((unsigned char*)format, size);
+
+    output(0).push(packet);
+}else{
+//doe iets
+click_chatter("str");
+
+
+}
+
+}
+
+}
+
 int report_sender::join_group(const String &conf, Element* e, void* thunk, ErrorHandler* errh)
 {
+	
     IPAddress groupaddress;
-    std::vector<String> parts = split(conf, ' ');
+    Vector<String> parts = split(conf, ' ');
 
     if (parts.size() != 2) return -1;
     if (parts[0] == String("GROUP")) {
@@ -66,6 +188,19 @@ int report_sender::join_group(const String &conf, Element* e, void* thunk, Error
 	}  else {
 		return -1;
 	}
+    report_sender* rs = (report_sender*) e;
+
+    int it = findK(rs->groups, groupaddress.in_addr());
+
+    if (it==-1 || !(rs->groups[it]->isEmpty())){
+	
+        return -1;
+
+    }
+    clientTimer ct;
+    ct.address = rs->src.in_addr();
+    ct.time=0;
+    rs->groups[it]->Include.push_back(ct);
 
     int size = sizeof(IGMP_report) + sizeof(IGMP_grouprecord);
     WritablePacket *packet  = Packet::make(size);
@@ -87,13 +222,25 @@ int report_sender::join_group(const String &conf, Element* e, void* thunk, Error
 int report_sender::leave_group(const String &conf, Element* e, void* thunk, ErrorHandler* errh)
 {
     IPAddress groupaddress;
-    std::vector<String> parts = split(conf, ' ');
+    Vector<String> parts = split(conf, ' ');
     if (parts.size() != 2) return -1;
     if (parts[0] == String("GROUP")) {
 		groupaddress = IPAddress(parts[1]);
 	}  else {
 		return -1;
 	}
+
+    report_sender* rs = (report_sender*) e;
+
+    int it = findK(rs->groups, groupaddress.in_addr());
+
+    if (it==-1 || rs->groups[it]->isEmpty()){
+
+        return -1;
+
+    }
+    
+    rs->groups[it]->Include=Vector<clientTimer>();
 
     int size = sizeof(IGMP_report) + sizeof(IGMP_grouprecord);
     WritablePacket *packet  = Packet::make(size);

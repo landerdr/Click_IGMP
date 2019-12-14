@@ -1,12 +1,16 @@
 #ifndef CLICK_report_sender_HH
 #define CLICK_report_sender_HH
 #include <click/element.hh>
+#include <click/timer.hh>
+#include <click/vector.cc>
+#include "utils.hh"
 #include "IGMP.hh"
+
 CLICK_DECLS
 
 class report_sender : public Element {
 	public:
-    report_sender();
+        report_sender();
 		~report_sender();
 		
 		const char *class_name() const	{ return "report_sender"; }
@@ -15,15 +19,23 @@ class report_sender : public Element {
 		int configure(Vector<String>&, ErrorHandler*);
 
         void push(int interface, Packet* p );
+	Vector<Group*> groups;
+	Vector<clientTimer> timers;
+	IPAddress src;
+	void run_timer(Timer* t);
 
     private:
 		static int join_group(const String &conf, Element* e, void* thunk, ErrorHandler* errh);
 		static int leave_group(const String &conf, Element* e, void* thunk, ErrorHandler* errh);
 		void add_handlers();
 
-        IPAddress src;
+        
         IPAddress dst;
         int id = 0;
+	Timer timer;
+	
+        
+
 };
 
 CLICK_ENDDECLS
