@@ -35,6 +35,23 @@ int report_sender::configure(Vector<String> &conf, ErrorHandler *errh) {
 
 void report_sender::push(int interface, Packet* p ){
     // output(interface).push(p);
+    WritablePacket* n = p->uniqueify();
+    if(n->ip_header()->ip_p == 2)
+    {
+	click_ip* iph = (click_ip*) n->data();
+	test* format = (struct test*) (iph+1);
+
+        if(format->type==0x11){
+            //click_chatter("gp");
+            IGMP_query* gm = (struct IGMP_query*) (iph + 1);
+
+
+        }
+    }
+
+    
+
+
     p->kill();
 }
 
