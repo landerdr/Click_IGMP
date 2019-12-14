@@ -4,8 +4,6 @@
 #include "IGMP_Router.hh"
 CLICK_DECLS
 
-
-
 int findKey(Vector<clientTimer> v, in_addr k)
 {
     for (int i=0; i<v.size(); i++)
@@ -16,7 +14,7 @@ int findKey(Vector<clientTimer> v, in_addr k)
         }
     }
     return -1;
-}
+};
 
 int findKey(Vector<Group*> v, in_addr k)
 {
@@ -28,10 +26,7 @@ int findKey(Vector<Group*> v, in_addr k)
         }
     }
     return -1;
-}
-
-
-
+};
 IGMP_Router::IGMP_Router() : timer(this)
 {}
 
@@ -58,6 +53,7 @@ void IGMP_Router::run_timer(Timer* t)
     *format = IGMP_query();
     format->max_resp_code = 20; // timout value in cs: 20 -> 2s
     format->qqic = 60; // query interval (s)
+    format->multicast_address = IPAddress("224.4.4.4").in_addr();
     
     format->cksum = click_in_cksum((unsigned char*)format, size);
 
