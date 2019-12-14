@@ -61,5 +61,10 @@ struct IGMP_grouprecord
 };
 
 
+struct test {
+    uint8_t type;
+};
+
+
 
 #endif

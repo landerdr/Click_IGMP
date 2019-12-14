@@ -5,18 +5,22 @@
 #include <click/bighashmap.cc>
 #include "IGMP.hh"
 #include <tuple>
+#include <click/timer.hh>
 CLICK_DECLS
 
-struct test {
-    uint8_t type;
+struct clientTimer{
+	in_addr address;
+	unsigned int time;
 };
 
 enum Filtermode {Include,Exclude};
 
 class Group {
 public:
-    Vector<std::tuple<in_addr, unsigned int>> Include;
-    Vector<std::tuple<in_addr, unsigned int>> Exclude;
+	
+    Vector<clientTimer> Include;
+    Vector<clientTimer> Exclude;
+    in_addr groupaddress;
     unsigned int grouptimer;
     Filtermode mode;
     int robustness;
@@ -33,7 +37,7 @@ class IGMP_Router : public Element {
 		~IGMP_Router();
 		
 		const char *class_name() const	{ return "IGMP_Router"; }
-		const char *port_count() const	{ return "1/1"; }
+		const char *port_count() const	{ return "1/2"; }
 		const char *processing() const	{ return PUSH; }
 		int configure(Vector<String>&, ErrorHandler*);
 		
@@ -43,7 +47,7 @@ class IGMP_Router : public Element {
 	private:
         Timer timer;
 //		HashMap<int, Vector<int>> ports;
-        Vector<std::tuple<in_addr, Group*>> active_groups;
+        Vector<Group*> active_groups;
 };
 
 CLICK_ENDDECLS

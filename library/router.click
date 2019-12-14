@@ -119,12 +119,15 @@ elementclass Router {
 	// Server trafic
 	mct[0] -> igmpr0 :: IGMP_Router() -> server_arpq;
 	igmp0[0] -> Strip(14) -> igmpr0;
+	igmpr0[1] -> IPEncap(PROTO 2,SRC 192.168.1.0, DST 224.0.0.1, TTL 1, TOS 0xc0) -> server_arpq; 
 	// Client 1 traffic
 	mct[1] -> igmpr1 :: IGMP_Router() -> client1_arpq;
 	igmp1[0] -> Strip(14) -> igmpr1;
+	igmpr1[1] -> IPEncap(PROTO 2,SRC 192.168.2.0, DST 224.0.0.1, TTL 1, TOS 0xc0) -> client1_arpq; 
 	// Client 2 traffic
 	mct[2] -> igmpr2 :: IGMP_Router() -> client2_arpq;
 	igmp2[0] -> Strip(14) -> igmpr2;
+	igmpr2[1] -> IPEncap(PROTO 2,SRC 192.168.3.0, DST 224.0.0.1, TTL 1, TOS 0xc0) -> client2_arpq; 
 
 
 }
