@@ -43,7 +43,7 @@ int IGMP_Router::configure(Vector<String> &conf, ErrorHandler *errh) {
 
 void IGMP_Router::run_timer(Timer* t)
 {
-    timer.schedule_after_msec(1000);
+    timer.schedule_after_msec(20000);
 
     int size = sizeof(IGMP_query);
     WritablePacket *packet = Packet::make(size);
@@ -53,7 +53,7 @@ void IGMP_Router::run_timer(Timer* t)
     *format = IGMP_query();
     format->max_resp_code = 20; // timout value in cs: 20 -> 2s
     format->qqic = 60; // query interval (s)
-    format->multicast_address = IPAddress("224.4.4.4").in_addr();
+    format->multicast_address = IPAddress("0.0.0.0").in_addr();
     
     format->cksum = click_in_cksum((unsigned char*)format, size);
 
@@ -79,10 +79,10 @@ void IGMP_Router::push(int input, Packet* p ){
 
         click_ip* iph = (click_ip*) n->data();
         test* format = (struct test*) (iph+1);
-        if(format->type==0x11){
+        //if(format->type==0x11){
             //click_chatter("gp");
-            IGMP_query* gm = (struct IGMP_query*) (iph + 1);
-        }
+            //IGMP_query* gm = (struct IGMP_query*) (iph + 1);
+        //}
         if(format->type==0x22){
             //click_chatter("rp");
             IGMP_report* rm = (struct IGMP_report*) (iph + 1);

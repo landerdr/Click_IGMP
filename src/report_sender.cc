@@ -89,10 +89,17 @@ void report_sender::push(int interface, Packet* p ){
             group->grouptimer = gm->max_resp_code;
             group->mode = Filtermode::Include;
             group->robustness = gm->qrv;
-	   
+		//set QQIC/QRV/max_resp_code if general query
+	    if(groupadd == IPAddress("0.0.0.0").in_addr()){
+		QQIC= gm->qqic;
+		QRV= gm->qrv;
+		max_resp_code = gm->max_resp_code;
 
-	    if(!group->isEmpty()){
-		    unsigned int random = gm->max_resp_code/2;
+	    }
+
+	    if(!group->isEmpty()||groupadd == IPAddress("0.0.0.0").in_addr()){
+		
+		    unsigned int random = click_random(0,gm->max_resp_code);
 		    clientTimer ct;
 		    ct.time = random;
 		    ct.address = groupadd;
@@ -108,7 +115,7 @@ void report_sender::push(int interface, Packet* p ){
 
 		    }
 	    }
-            if (it==-1 && groupadd!= IPAddress("224.0.0.1").in_addr()){
+            if (it==-1 && groupadd!= IPAddress("0.0.0.0").in_addr()){
 		//click_chatter("affaff");
                 groups.push_back(group);
 
@@ -128,12 +135,13 @@ Vector<in_addr> pass1Timer(Vector<clientTimer>& v){
 Vector<in_addr> retval;
 Vector<int> delval;
 for(int i =0; i <v.size();i++){
-	v[i].time--;
-	if (v[i].time ==0){
+	if(v[i].time ==0){
 		delval.push_back(i);
 		retval.push_back(v[i].address);
-
+	}else{
+		v[i].time--;
 	}
+	
 
 }
 for (int j = delval.size()-1; j>=0;j--){
@@ -150,7 +158,9 @@ timer.schedule_after_msec(100);
 Vector<in_addr> addrs= pass1Timer(timers);
 for (in_addr add: addrs){
 //respond
-if(add != IPAddress("224.0.0.1").in_addr()){
+if(add != IPAddress("0.0.0.0").in_addr()){
+    int it = findK(groups,add);
+    if(it!=-1 && !groups[it]->isEmpty()){	
     int size = sizeof(IGMP_report) + sizeof(IGMP_grouprecord);
     WritablePacket *packet  = Packet::make(size);
     memset(packet->data(), 0, size);
@@ -165,12 +175,41 @@ if(add != IPAddress("224.0.0.1").in_addr()){
     format->cksum = click_in_cksum((unsigned char*)format, size);
 
     output(0).push(packet);
+    }
 }else{
+    //click_chatter("general query received");
 //doe iets
-click_chatter("str");
+    Vector<Group *> groupsin;
 
+    for (Group *g : groups)
+    {
+        if (!g->isEmpty())
+        {
+            groupsin.push_back(g);
+        }
+    }
+    if(groupsin.size()==0){
+	return;
+    }
 
-}
+    int size = sizeof(IGMP_report) + sizeof(IGMP_grouprecord) * groupsin.size();
+    WritablePacket *packet = Packet::make(size);
+    memset(packet->data(), 0, size);
+
+    IGMP_report *format = (struct IGMP_report *)packet->data();
+    *format = IGMP_report();
+    format->num_group_records = htons(groupsin.size());
+    IGMP_grouprecord *gr = (struct IGMP_grouprecord *)(format + 1);
+    for (Group *g : groupsin)
+    {
+        gr->type = IGMP_recordtype::MODE_IS_EXCLUDE;
+        gr->multicast_address = g->groupaddress;
+	gr = (struct IGMP_grouprecord *)(gr+1);
+    }
+
+    format->cksum = click_in_cksum((unsigned char *)format, size);
+    output(0).push(packet);
+        }
 
 }
 
@@ -192,10 +231,21 @@ int report_sender::join_group(const String &conf, Element* e, void* thunk, Error
 
     int it = findK(rs->groups, groupaddress.in_addr());
 
-    if (it==-1 || !(rs->groups[it]->isEmpty())){
+    if (it==-1){
 	
-        return -1;
+        Group* g = new Group;
+	g->groupaddress = groupaddress.in_addr();
+	g->grouptimer = 1;
+        g->mode = Filtermode::Include;
+        g->robustness = 2; 
+	rs->groups.push_back(g);
+	it = findK(rs->groups, groupaddress.in_addr());
 
+
+    }
+
+    if(!(rs->groups[it]->isEmpty())){
+	return -1;
     }
     clientTimer ct;
     ct.address = rs->src.in_addr();
