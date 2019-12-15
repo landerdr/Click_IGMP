@@ -14,17 +14,18 @@ enum Filtermode {Include,Exclude};
 
 class Group {
 public:
-    Vector<clientTimer> Include;
-    Vector<clientTimer> Exclude;
+    // Used parameters
     in_addr groupaddress;
-    unsigned int grouptimer;
     Filtermode mode;
+    Vector<clientTimer> sources;
+
+    // present for igmp compliance
+    unsigned int grouptimer;
     int robustness;
     int timer;
 
     bool isEmpty(){
-        return Include.size()==0 && Exclude.size()==0;
-
+        return sources.size()==0;
     };
 };
 

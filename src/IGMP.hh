@@ -1,15 +1,17 @@
 #ifndef CLICKNET_IGMP_H
 #define CLICKNET_IGMP_H
+
 #include <clicknet/ip.h>
 
-enum class IGMPTypes : uint8_t
-{
+#define BROADCAST IPAddress("0.0.0.0")
+#define IGMP_MULTICAST IPAddress("224.0.0.1")
+
+enum class IGMPTypes : uint8_t {
     QUERY = 0x11,
     REPORT = 0x22
 };
 
-enum class IGMP_recordtype : uint8_t
-{
+enum class IGMP_recordtype : uint8_t {
     MODE_IS_INCLUDE = 1,
     MODE_IS_EXCLUDE = 2,
     CHANGE_TO_INCLUDE_MODE = 3,
@@ -21,8 +23,7 @@ enum class IGMP_recordtype : uint8_t
  * 
 */
 // Membership QUERY message
-struct IGMP_query
-{
+struct IGMP_query {
     IGMPTypes type = IGMPTypes::QUERY;
     uint8_t max_resp_code; // timout value 10x s
     uint16_t cksum = 0;
@@ -40,8 +41,7 @@ struct IGMP_query
  * 
 */
 // Group membership report
-struct IGMP_report
-{
+struct IGMP_report {
     IGMPTypes type = IGMPTypes::REPORT;
     uint8_t resv1 = 0;
     uint16_t cksum = 0;
@@ -49,8 +49,7 @@ struct IGMP_report
     uint16_t num_group_records = 0;
     // Vector of grouprecords
 };
-struct IGMP_grouprecord
-{
+struct IGMP_grouprecord {
     IGMP_recordtype type;
     uint8_t aux_data_len = 0; // ALWAYS 0
     uint16_t num_sources = 0;
@@ -59,8 +58,7 @@ struct IGMP_grouprecord
     //aux data // Not used in our implementation
 };
 
-struct test
-{
+struct test {
     uint8_t type;
 };
 

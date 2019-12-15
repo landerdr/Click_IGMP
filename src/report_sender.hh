@@ -8,38 +8,33 @@
 
 CLICK_DECLS
 
-class report_sender : public Element {
-	public:
-        report_sender();
-		~report_sender();
-		
-		const char *class_name() const	{ return "report_sender"; }
-		const char *port_count() const	{ return "1/1"; }
-		const char *processing() const	{ return PUSH; }
-		int configure(Vector<String>&, ErrorHandler*);
+class report_sender : public Element
+{
+public:
+	report_sender();
+	~report_sender();
 
-        void push(int interface, Packet* p );
-	Vector<Group*> groups;
+	const char *class_name() const { return "report_sender"; }
+	const char *port_count() const { return "1/1"; }
+	const char *processing() const { return PUSH; }
+	int configure(Vector<String> &, ErrorHandler *);
+
+	void push(int interface, Packet *p);
+	Vector<Group *> groups;
 	Vector<clientTimer> timers;
 	IPAddress src;
-	void run_timer(Timer* t);
+	void run_timer(Timer *t);
 
-    private:
-		static int join_group(const String &conf, Element* e, void* thunk, ErrorHandler* errh);
-		static int leave_group(const String &conf, Element* e, void* thunk, ErrorHandler* errh);
-		void add_handlers();
+private:
+	static int join_group(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
+	static int leave_group(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
+	void add_handlers();
 
-        
-        IPAddress dst;
-        int id = 0;
+	IPAddress dst;
 	Timer timer;
-	uint8_t QQIC = 0;
-	unsigned int QRV = 0;
-	uint8_t max_resp_code =0;
-
-	
-        
-
+    unsigned max_resp_time = 100; // maximum response time | default = 100 (10s)
+    unsigned query_interval_time = 125; // QQIC: time between queries | default = 125 (seconds)
+    unsigned robustness_variable = 2; // robustness from system | default = 2 (amount of joins/leaves send)
 };
 
 CLICK_ENDDECLS
