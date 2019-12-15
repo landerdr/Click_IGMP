@@ -267,12 +267,12 @@ int report_sender::join_group(const String &conf, Element *e, void *thunk, Error
 
     format->cksum = click_in_cksum((unsigned char *) format, size);
 
-    for (int i=0; i<robustness_variable; i++) {
+    for (int i=0; i<rs->robustness_variable; i++) {
         unsigned random = click_random(0, rs->max_resp_time);
         packetTimer pt;
         pt.packet = packet;
         pt.time = random;
-        mode_changes.push_back(pt);
+        rs->mode_changes.push_back(pt);
     }
 
     click_chatter("Joined group...");
@@ -314,12 +314,12 @@ int report_sender::leave_group(const String &conf, Element *e, void *thunk, Erro
     // Set checksum
     format->cksum = click_in_cksum((unsigned char *) format, size);
 
-    for (int i=0; i<robustness_variable; i++) {
+    for (int i=0; i<rs->robustness_variable; i++) {
         unsigned random = click_random(0, rs->max_resp_time);
         packetTimer pt;
         pt.packet = packet;
         pt.time = random;
-        mode_changes.push_back(pt);
+        rs->mode_changes.push_back(pt);
     }
 
     click_chatter("Left group...");
