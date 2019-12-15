@@ -24,6 +24,7 @@ public:
 	Vector<clientTimer> timers;
 	IPAddress src;
 	void run_timer(Timer *t);
+	Vector<packetTimer> mode_changes;
 
 private:
 	static int join_group(const String &conf, Element *e, void *thunk, ErrorHandler *errh);

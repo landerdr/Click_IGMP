@@ -10,6 +10,11 @@ struct clientTimer{
 	unsigned int time;
 };
 
+struct packetTimer{
+    Packet *packet;
+    unsigned int time;
+};
+
 enum Filtermode {Include,Exclude};
 
 class Group {
@@ -26,6 +31,10 @@ public:
 
     bool isEmpty(){
         return sources.size()==0;
+    };
+
+    bool isJoined_client() {
+        return mode == IGMP_recordtype::MODE_IS_EXCLUDE;
     };
 };
 
