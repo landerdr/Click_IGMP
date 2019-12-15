@@ -253,21 +253,22 @@ int report_sender::join_group(const String &conf, Element *e, void *thunk, Error
         rs->groups[it]->mode = Filtermode::Exclude;
     }
 
-    // Create package
-    int size = sizeof(IGMP_report) + sizeof(IGMP_grouprecord);
-    WritablePacket *packet = Packet::make(size);
-    memset(packet->data(), 0, size);
-
-    IGMP_report *format = (struct IGMP_report *) packet->data();
-    *format = IGMP_report();
-    format->num_group_records = htons(1);
-    IGMP_grouprecord *gr = (struct IGMP_grouprecord *) (format + 1);
-    gr->type = IGMP_recordtype::CHANGE_TO_EXCLUDE_MODE;
-    gr->multicast_address = groupaddress.in_addr();
-
-    format->cksum = click_in_cksum((unsigned char *) format, size);
-
     for (int i=0; i<rs->robustness_variable; i++) {
+        // Create package
+        int size = sizeof(IGMP_report) + sizeof(IGMP_grouprecord);
+        WritablePacket *packet = Packet::make(size);
+        memset(packet->data(), 0, size);
+
+        IGMP_report *format = (struct IGMP_report *) packet->data();
+        *format = IGMP_report();
+        format->num_group_records = htons(1);
+        IGMP_grouprecord *gr = (struct IGMP_grouprecord *) (format + 1);
+        gr->type = IGMP_recordtype::CHANGE_TO_EXCLUDE_MODE;
+        gr->multicast_address = groupaddress.in_addr();
+
+        format->cksum = click_in_cksum((unsigned char *) format, size);
+
+        // Put in delay queue
         unsigned random = click_random(0, rs->max_resp_time);
         packetTimer pt;
         pt.packet = packet;
@@ -299,6 +300,11 @@ int report_sender::leave_group(const String &conf, Element *e, void *thunk, Erro
     // Set group to empty
     rs->groups[it]->mode = Filtermode::Include;
 
+    for (int i=0; i<rs->robustness_variable; i++) {
+        // Create packet
+        int size = sizeof(IGMP_report) + sizeof(IGMP_grouprecord);
+        WritablePacket *packet = Packet::make(size);
+        memset(packet->data(), 0, size);
     // Create packet
     int size = sizeof(IGMP_report) + sizeof(IGMP_grouprecord);
     WritablePacket *packet = Packet::make(size);
@@ -331,17 +337,17 @@ void report_sender::leaveGroup(const String& conf){
     iph->ip_tos = 0;
     iph->ip_sum = click_in_cksum((unsigned char*) iph, sizeof(click_ip));
 
-    IGMP_report *format = (struct IGMP_report *) packet->data();
-    *format = IGMP_report();
-    format->num_group_records = htons(1);
-    IGMP_grouprecord *gr = (struct IGMP_grouprecord *) (format + 1);
-    gr->type = IGMP_recordtype::CHANGE_TO_INCLUDE_MODE;
-    gr->multicast_address = groupaddress.in_addr();
+        IGMP_report *format = (struct IGMP_report *) packet->data();
+        *format = IGMP_report();
+        format->num_group_records = htons(1);
+        IGMP_grouprecord *gr = (struct IGMP_grouprecord *) (format + 1);
+        gr->type = IGMP_recordtype::CHANGE_TO_INCLUDE_MODE;
+        gr->multicast_address = groupaddress.in_addr();
 
-    // Set checksum
-    format->cksum = click_in_cksum((unsigned char *) format, size);
+        // Set checksum
+        format->cksum = click_in_cksum((unsigned char *) format, size);
 
-    for (int i=0; i<rs->robustness_variable; i++) {
+        // Put in delay queue
         unsigned random = click_random(0, rs->max_resp_time);
         packetTimer pt;
         pt.packet = packet;
