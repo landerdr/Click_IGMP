@@ -92,7 +92,7 @@ void report_sender::push(int interface, Packet *p) {
             }
 
             // If group specific and joined or general query, respond
-            if (!group->isEmpty() || groupadd == BROADCAST) {
+            if (group->isJoined_client() || groupadd == BROADCAST) {
                 unsigned random = click_random(0, gm->max_resp_code);
                 // Queue response
                 clientTimer ct;
@@ -121,6 +121,23 @@ void report_sender::push(int interface, Packet *p) {
     p->kill();
 }
 
+Vector<Packet *> pass1Timer(Vector<packetTimer> &v) {
+    Vector <Packet *> retval;
+    Vector<int> delval;
+    for (int i = 0; i < v.size(); i++) {
+        if (v[i].time == 0) {
+            delval.push_back(i);
+            retval.push_back(v[i].packet);
+        } else {
+            v[i].time--;
+        }
+    }
+    for (int j = delval.size() - 1; j >= 0; j--) {
+        v.erase(v.begin() + delval[j]);
+    }
+    return retval;
+}
+
 Vector <in_addr> pass1Timer(Vector <clientTimer> &v) {
     Vector <in_addr> retval;
     Vector<int> delval;
@@ -135,13 +152,18 @@ Vector <in_addr> pass1Timer(Vector <clientTimer> &v) {
     for (int j = delval.size() - 1; j >= 0; j--) {
         v.erase(v.begin() + delval[j]);
     }
-
     return retval;
 }
 
 void report_sender::run_timer(Timer *t) {
     // Schedule timer
     timer.schedule_after_msec(100);
+
+    Vector<Packet *> send = pass1Timer(mode_changes);
+    for (Packet *p : send) {
+        output(0).push(p);
+    }
+
     // Check virtual timers
     Vector <in_addr> addrs = pass1Timer(timers);
 
@@ -150,7 +172,8 @@ void report_sender::run_timer(Timer *t) {
             // Get joined groups
             Vector < Group * > groupsin;
             for (Group *g : groups) {
-                if (!g->isEmpty()) {
+                // Joined group
+                if (g->isJoined_client()) {
                     groupsin.push_back(g);
                 }
             }
@@ -179,7 +202,8 @@ void report_sender::run_timer(Timer *t) {
             output(0).push(packet);
         } else {
             int it = findK(groups, add);
-            if (it != -1 && !groups[it]->isEmpty()) {
+            // Group exists and is joined
+            if (it != -1 && groups[it]->isJoined_client()) {
                 int size = sizeof(IGMP_report) + sizeof(IGMP_grouprecord);
                 WritablePacket *packet = Packet::make(size);
                 memset(packet->data(), 0, size);
@@ -211,26 +235,25 @@ int report_sender::join_group(const String &conf, Element *e, void *thunk, Error
     // Find group
     int it = findK(rs->groups, groupaddress.in_addr());
 
-    // If group not found, create group
+    // If group not found, create group and join
     if (it == -1) {
         Group *g = new Group;
         g->groupaddress = groupaddress.in_addr();
         g->grouptimer = rs->max_resp_time;
-        g->mode = Filtermode::Include;
+        g->mode = Filtermode::Exclude;
         g->robustness = rs->robustness_variable;
         rs->groups.push_back(g);
-        it = findK(rs->groups, groupaddress.in_addr());
     }
-    // If already in group, ignore
-    if (!(rs->groups[it]->isEmpty())) {
+    // Group exists, but already joined
+    else if (rs->groups[it]->isJoined_client()) {
         return -1;
     }
+    // Group exists, but not joined
+    else {
+        rs->groups[it]->mode = Filtermode::Exclude;
+    }
 
-    clientTimer ct;
-    ct.address = rs->src.in_addr();
-    ct.time = 0;
-    rs->groups[it]->sources.push_back(ct);
-
+    // Create package
     int size = sizeof(IGMP_report) + sizeof(IGMP_grouprecord);
     WritablePacket *packet = Packet::make(size);
     memset(packet->data(), 0, size);
@@ -244,28 +267,39 @@ int report_sender::join_group(const String &conf, Element *e, void *thunk, Error
 
     format->cksum = click_in_cksum((unsigned char *) format, size);
 
-    e->output(0).push(packet);
+    for (int i=0; i<robustness_variable; i++) {
+        unsigned random = click_random(0, rs->max_resp_time);
+        packetTimer pt;
+        pt.packet = packet;
+        pt.time = random;
+        mode_changes.push_back(pt);
+    }
+
     click_chatter("Joined group...");
     return 0;
 }
 
 int report_sender::leave_group(const String &conf, Element *e, void *thunk, ErrorHandler *errh) {
     IPAddress groupaddress;
+    // Parse the input
     Vector <String> parts = split(conf, ' ');
     if (parts.size() != 1)
         return -1;
     groupaddress = IPAddress(parts[0]);
-
     report_sender *rs = (report_sender *) e;
 
+    // Finds group
     int it = findK(rs->groups, groupaddress.in_addr());
 
-    if (it == -1 || rs->groups[it]->isEmpty()) {
+    // If not found or if group empty -> ignore
+    if (it == -1 || !rs->groups[it]->isJoined_client()) {
         return -1;
     }
 
-    rs->groups[it]->sources = Vector<clientTimer>();
+    // Set group to empty
+    rs->groups[it]->mode = IGMP_recordtype::MODE_IS_INCLUDE;
 
+    // Create packet
     int size = sizeof(IGMP_report) + sizeof(IGMP_grouprecord);
     WritablePacket *packet = Packet::make(size);
     memset(packet->data(), 0, size);
@@ -304,9 +338,17 @@ void report_sender::leaveGroup(const String& conf){
     gr->type = IGMP_recordtype::CHANGE_TO_INCLUDE_MODE;
     gr->multicast_address = groupaddress.in_addr();
 
+    // Set checksum
     format->cksum = click_in_cksum((unsigned char *) format, size);
 
-    e->output(0).push(packet);
+    for (int i=0; i<robustness_variable; i++) {
+        unsigned random = click_random(0, rs->max_resp_time);
+        packetTimer pt;
+        pt.packet = packet;
+        pt.time = random;
+        mode_changes.push_back(pt);
+    }
+    
     click_chatter("Left group...");
     return 0;
 }
