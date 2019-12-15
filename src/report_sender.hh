@@ -33,6 +33,10 @@ class report_sender : public Element {
         IPAddress dst;
         int id = 0;
 	Timer timer;
+	uint8_t QQIC = 0;
+	unsigned int QRV = 0;
+	uint8_t max_resp_code =0;
+
 	
         
 
