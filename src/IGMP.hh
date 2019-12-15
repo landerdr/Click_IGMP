@@ -65,5 +65,3 @@ struct test
 };
 
 #endif
-}
-;
