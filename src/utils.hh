@@ -34,7 +34,7 @@ public:
     };
 
     bool isJoined_client() {
-        return mode == IGMP_recordtype::MODE_IS_EXCLUDE;
+        return mode == Filtermode::Exclude;
     };
 };
 

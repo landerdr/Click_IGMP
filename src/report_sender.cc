@@ -297,7 +297,7 @@ int report_sender::leave_group(const String &conf, Element *e, void *thunk, Erro
     }
 
     // Set group to empty
-    rs->groups[it]->mode = IGMP_recordtype::MODE_IS_INCLUDE;
+    rs->groups[it]->mode = Filtermode::Include;
 
     // Create packet
     int size = sizeof(IGMP_report) + sizeof(IGMP_grouprecord);
@@ -321,7 +321,7 @@ int report_sender::leave_group(const String &conf, Element *e, void *thunk, Erro
         pt.time = random;
         mode_changes.push_back(pt);
     }
-    
+
     click_chatter("Left group...");
     return 0;
 }
