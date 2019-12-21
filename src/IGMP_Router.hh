@@ -1,5 +1,5 @@
-#ifndef CLICK_SIMPLEPULLELEMENT_HH
-#define CLICK_SIMPLEPULLELEMENT_HH
+#ifndef CLICK_IGMP_IGMP_ROUTER_HH
+#define CLICK_IGMP_IGMP_ROUTER_HH
 
 #include <click/element.hh>
 #include <click/vector.cc>
@@ -7,6 +7,7 @@
 #include "IGMP.hh"
 #include <click/timer.hh>
 #include "utils.hh"
+#include "IGMP_Query.hh"
 
 CLICK_DECLS
 
@@ -20,7 +21,7 @@ public:
 
     const char *class_name() const { return "IGMP_Router"; }
 
-    const char *port_count() const { return "1/2"; }
+    const char *port_count() const { return "1/1"; }
 
     const char *processing() const { return PUSH; }
 
@@ -34,8 +35,14 @@ private:
     unsigned max_resp_time = 100; // maximum response time | default = 100 (10s)
     unsigned query_interval_time = 125; // QQIC: time between queries | default = 125 (seconds)
     unsigned robustness_variable = 2; // robustness from system | default = 2 (amount of joins/leaves send)
+
+    // Packet generator
+    IGMP_Query igmpQuery;
+
+    // Timers
     Timer timer;
     Vector<Group *> active_groups;
+
 };
 
 CLICK_ENDDECLS

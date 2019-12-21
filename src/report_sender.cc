@@ -52,6 +52,8 @@ int report_sender::configure(Vector <String> &conf, ErrorHandler *errh) {
     if (Args(conf, this, errh).read_mp("SOURCE", src).read_mp("DESTINATION", dst).complete() < 0)
         return -1;
 
+    igmpReport = IGMP_Report(src);
+
     // Initialise timer
     timer.initialize(this);
     timer.schedule_after_msec(100);
@@ -121,8 +123,8 @@ void report_sender::push(int interface, Packet *p) {
     p->kill();
 }
 
-Vector<Packet *> pass1Timer(Vector<packetTimer> &v) {
-    Vector <Packet *> retval;
+Vector<Packet *> pass1Timer(Vector <packetTimer> &v) {
+    Vector < Packet * > retval;
     Vector<int> delval;
     for (int i = 0; i < v.size(); i++) {
         if (v[i].time == 0) {
@@ -159,15 +161,18 @@ void report_sender::run_timer(Timer *t) {
     // Schedule timer
     timer.schedule_after_msec(100);
 
-    Vector<Packet *> send = pass1Timer(mode_changes);
+    // Sending queued packages (join/leave)
+    Vector < Packet * > send = pass1Timer(mode_changes);
     for (Packet *p : send) {
         output(0).push(p);
     }
 
-    // Check virtual timers
+    // Check virtual timers for groups
     Vector <in_addr> addrs = pass1Timer(timers);
 
+    // For every expired timer
     for (in_addr add : addrs) {
+        // If general query response
         if (add == BROADCAST) {
             // Get joined groups
             Vector < Group * > groupsin;
@@ -182,41 +187,15 @@ void report_sender::run_timer(Timer *t) {
             if (groupsin.size() == 0) {
                 return;
             }
-            // Calculates package size
-            int size = sizeof(IGMP_report) + sizeof(IGMP_grouprecord) * groupsin.size();
-            // Create basic packet
-            WritablePacket *packet = Packet::make(size);
-            memset(packet->data(), 0, size);
-            IGMP_report *format = (struct IGMP_report *) packet->data();
-            *format = IGMP_report();
-            format->num_group_records = htons(groupsin.size());
-            // Create group reports
-            IGMP_grouprecord *gr = (struct IGMP_grouprecord *) (format + 1);
-            for (Group *g : groupsin) {
-                gr->type = IGMP_recordtype::MODE_IS_EXCLUDE;
-                gr->multicast_address = g->groupaddress;
-                gr = (struct IGMP_grouprecord *) (gr + 1);
-            }
-            // Set checksum
-            format->cksum = click_in_cksum((unsigned char *) format, size);
+
+            WritablePacket *packet = igmpReport.create_general(groupsin);
             output(0).push(packet);
+
         } else {
             int it = findK(groups, add);
             // Group exists and is joined
             if (it != -1 && groups[it]->isJoined_client()) {
-                int size = sizeof(IGMP_report) + sizeof(IGMP_grouprecord);
-                WritablePacket *packet = Packet::make(size);
-                memset(packet->data(), 0, size);
-
-                IGMP_report *format = (struct IGMP_report *) packet->data();
-                *format = IGMP_report();
-                format->num_group_records = htons(1);
-                IGMP_grouprecord *gr = (struct IGMP_grouprecord *) (format + 1);
-                gr->type = IGMP_recordtype::MODE_IS_EXCLUDE;
-                gr->multicast_address = add;
-
-                // Set Cheksum
-                format->cksum = click_in_cksum((unsigned char *) format, size);
+                WritablePacket *packet = igmpReport.create_specific(groups[it]->groupaddress, groups[it]->mode);
                 output(0).push(packet);
             }
         }
@@ -244,29 +223,19 @@ int report_sender::join_group(const String &conf, Element *e, void *thunk, Error
         g->robustness = rs->robustness_variable;
         rs->groups.push_back(g);
     }
-    // Group exists, but already joined
+        // Group exists, but already joined
     else if (rs->groups[it]->isJoined_client()) {
         return -1;
     }
-    // Group exists, but not joined
+        // Group exists, but not joined
     else {
         rs->groups[it]->mode = Filtermode::Exclude;
     }
 
-    for (int i=0; i<rs->robustness_variable; i++) {
+    for (int i = 0; i < rs->robustness_variable; i++) {
         // Create package
-        int size = sizeof(IGMP_report) + sizeof(IGMP_grouprecord);
-        WritablePacket *packet = Packet::make(size);
-        memset(packet->data(), 0, size);
-
-        IGMP_report *format = (struct IGMP_report *) packet->data();
-        *format = IGMP_report();
-        format->num_group_records = htons(1);
-        IGMP_grouprecord *gr = (struct IGMP_grouprecord *) (format + 1);
-        gr->type = IGMP_recordtype::CHANGE_TO_EXCLUDE_MODE;
-        gr->multicast_address = groupaddress.in_addr();
-
-        format->cksum = click_in_cksum((unsigned char *) format, size);
+        int size = sizeof(click_ip) + 4 + sizeof(IGMP_report) + sizeof(IGMP_grouprecord);
+        WritablePacket *packet = igmpReport.create_specific(groupaddress, IGMP_recordtype::CHANGE_TO_EXCLUDE_MODE);
 
         // Put in delay queue
         unsigned random = click_random(0, rs->max_resp_time);
@@ -300,52 +269,9 @@ int report_sender::leave_group(const String &conf, Element *e, void *thunk, Erro
     // Set group to empty
     rs->groups[it]->mode = Filtermode::Include;
 
-    for (int i=0; i<rs->robustness_variable; i++) {
+    for (int i = 0; i < rs->robustness_variable; i++) {
         // Create packet
-        int size = sizeof(IGMP_report) + sizeof(IGMP_grouprecord);
-        WritablePacket *packet = Packet::make(size);
-        memset(packet->data(), 0, size);
-    // Create packet
-    int size = sizeof(IGMP_report) + sizeof(IGMP_grouprecord);
-    WritablePacket *packet = Packet::make(size);
-    memset(packet->data(), 0, size);
-void report_sender::leaveGroup(const String& conf){
-
-    id++;
-    IPAddress grp = IPAddress("0.0.0.0")
-    if (Args(conf, this, errh).read_mp("GROUP", grp).complete() < 0)
-        return -1;
-
-
-    WritablePacket *packet  = Packet::make(36);
-    if (packet == 0) {
-        click_chatter("cannot make packet!");
-        return nullptr;
-    }
-
-    memset(packet->data(), 0, 36);
-
-    click_ip* iph = (click_ip*) packet->data();
-    iph->ip_v = 4;
-    iph->ip_hl = 5;
-    iph->ip_src = src.in_addr();
-    iph->ip_dst = dst.in_addr();
-    iph->ip_p = 2;
-    iph->ip_ttl = 1;
-    iph->ip_id = htons(id);
-    iph->ip_len = htons(36);
-    iph->ip_tos = 0;
-    iph->ip_sum = click_in_cksum((unsigned char*) iph, sizeof(click_ip));
-
-        IGMP_report *format = (struct IGMP_report *) packet->data();
-        *format = IGMP_report();
-        format->num_group_records = htons(1);
-        IGMP_grouprecord *gr = (struct IGMP_grouprecord *) (format + 1);
-        gr->type = IGMP_recordtype::CHANGE_TO_INCLUDE_MODE;
-        gr->multicast_address = groupaddress.in_addr();
-
-        // Set checksum
-        format->cksum = click_in_cksum((unsigned char *) format, size);
+        WritablePacket *packet = igmpReport.create_specific(groupaddress, IGMP_recordtype::CHANGE_TO_INCLUDE_MODE);
 
         // Put in delay queue
         unsigned random = click_random(0, rs->max_resp_time);

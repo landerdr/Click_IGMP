@@ -1,10 +1,11 @@
-#ifndef CLICKNET_IGMP_H
-#define CLICKNET_IGMP_H
+#ifndef CLICKNET_IGMP_HH
+#define CLICKNET_IGMP_HH
 
 #include <clicknet/ip.h>
 
 #define BROADCAST IPAddress("0.0.0.0")
 #define IGMP_MULTICAST IPAddress("224.0.0.1")
+#define IGMP_REPORT_ADDRESS IPAddress("224.0.0.22")
 
 enum class IGMPTypes : uint8_t {
     QUERY = 0x11,
