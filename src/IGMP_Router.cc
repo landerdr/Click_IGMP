@@ -62,7 +62,7 @@ void IGMP_Router::run_timer(Timer *t) {
         Vector<int> rem;
         // For every client
         for (int i = 0; i < g->sources.size(); i++) {
-            clientTimer t = g->sources[i];
+            clientTimer &t = g->sources[i];
             if (t.time != 0) {
                 t.time--;
             } else {
@@ -112,7 +112,7 @@ void IGMP_Router::push(int input, Packet *p) {
             IGMP_grouprecord *grouprecord = (struct IGMP_grouprecord *) (rm + 1);
             for (int i = 0; i < rm->num_group_records; i++) {
                 // Leave message
-                if (grouprecord->type == IGMP_recordtype::CHANGE_TO_INCLUDE_MODE) {
+                if (grouprecord->type == IGMP_recordtype::CHANGE_TO_INCLUDE_MODE || grouprecord->type == IGMP_recordtype::MODE_IS_INCLUDE) {
                     Group *grp = igmp_groups.find(grouprecord->multicast_address);
                     // Group found
                     if (grp != nullptr) {
@@ -131,7 +131,7 @@ void IGMP_Router::push(int input, Packet *p) {
                     }
                 }
                     // Join message
-                else if (grouprecord->type == IGMP_recordtype::CHANGE_TO_EXCLUDE_MODE) {
+                else if (grouprecord->type == IGMP_recordtype::CHANGE_TO_EXCLUDE_MODE || grouprecord->type == IGMP_recordtype::MODE_IS_EXCLUDE) {
                     Group *grp = igmp_groups.find(grouprecord->multicast_address);
                     // Group not found yet (no clients subscribed), create group
                     if (grp == nullptr) {
