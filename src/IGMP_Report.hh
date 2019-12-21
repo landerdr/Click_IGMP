@@ -96,7 +96,11 @@ public:
         // Create group reports
         IGMP_grouprecord *gr = (struct IGMP_grouprecord *) (format + 1);
         for (Group *g : groups) {
-            gr->type = g->mode;
+            if (g->mode == Include) {
+                gr->type = IGMP_recordtype::MODE_IS_INCLUDE;
+            } else{
+                gr->type = IGMP_recordtype::MODE_IS_EXCLUDE;
+            }
             gr->multicast_address = g->groupaddress;
             gr = (struct IGMP_grouprecord *) (gr + 1);
         }
