@@ -14,15 +14,6 @@ int findK(Vector <clientTimer> v, in_addr k) {
     return -1;
 };
 
-int findK(Vector<Group *> v, in_addr k) {
-    for (int i = 0; i < v.size(); i++) {
-        if (v[i]->groupaddress == k) {
-            return i;
-        }
-    }
-    return -1;
-};
-
 Vector <String> split(const String &s, char delim) {
     Vector <String> v;
     String buf;
@@ -76,14 +67,12 @@ void report_sender::push(int interface, Packet *p) {
             IGMP_query *gm = (struct IGMP_query *) (option + 2);
             in_addr groupadd = gm->multicast_address;
             // Find group
-            int it = findK(groups, groupadd);
-            Group *group;
-            if (it == -1) {
+            Group *group = igmp_groups.find(groupadd);
+            bool new_group = group == nullptr;
+            if (new_group) {
                 group = new Group;
                 group->mode = Filtermode::Include;
                 group->groupaddress = groupadd;
-            } else {
-                group = groups[it];
             }
 
             group->grouptimer = gm->max_resp_code;
@@ -116,8 +105,8 @@ void report_sender::push(int interface, Packet *p) {
             }
 
             // If group not yet added & not general group, add
-            if (it == -1 && groupadd != BROADCAST) {
-                groups.push_back(group);
+            if (new_group && groupadd != BROADCAST) {
+                igmp_groups.add(group);
             }
         }
     }
@@ -178,31 +167,25 @@ void report_sender::run_timer(Timer *t) {
         // If general query response
         if (add == BROADCAST) {
             // Get joined groups
-            Vector < Group * > groupsin;
-            for (Group *g : groups) {
-                // Joined group
-                if (g->isJoined_client()) {
-                    groupsin.push_back(g);
-                }
-            }
+            Vector < Group * > joined_groups = igmp_groups.get_joined_groups();
 
             // No groups joined -> ignore
-            if (groupsin.size() == 0) {
+            if (joined_groups.size() == 0) {
                 return;
             }
 
-            WritablePacket *packet = igmpReport.create_general(groupsin);
+            WritablePacket *packet = igmpReport.create_general(joined_groups);
             output(0).push(packet);
 
         } else {
-            int it = findK(groups, add);
+            Group *g = igmp_groups.find(add);
             // Group exists and is joined
-            if (it != -1 && groups[it]->isJoined_client()) {
+            if (g != nullptr && g->isJoined_client()) {
                 WritablePacket *packet;
-                if (groups[it]->mode == Include) {
-                    packet = igmpReport.create_specific(groups[it]->groupaddress, IGMP_recordtype::MODE_IS_INCLUDE);
+                if (g->mode == Include) {
+                    packet = igmpReport.create_specific(g->groupaddress, IGMP_recordtype::MODE_IS_INCLUDE);
                 } else {
-                    packet = igmpReport.create_specific(groups[it]->groupaddress, IGMP_recordtype::MODE_IS_EXCLUDE);
+                    packet = igmpReport.create_specific(g->groupaddress, IGMP_recordtype::MODE_IS_EXCLUDE);
                 }
                 output(0).push(packet);
             }
@@ -220,29 +203,28 @@ int report_sender::join_group(const String &conf, Element *e, void *thunk, Error
     report_sender *rs = (report_sender *) e;
 
     // Find group
-    int it = findK(rs->groups, groupaddress.in_addr());
+    Group *g = rs->igmp_groups.find(groupaddress.in_addr());
 
     // If group not found, create group and join
-    if (it == -1) {
-        Group *g = new Group;
+    if (g == nullptr) {
+        g = new Group;
         g->groupaddress = groupaddress.in_addr();
         g->grouptimer = rs->max_resp_time;
         g->mode = Filtermode::Exclude;
         g->robustness = rs->robustness_variable;
-        rs->groups.push_back(g);
+        rs->igmp_groups.add(g);
     }
         // Group exists, but already joined
-    else if (rs->groups[it]->isJoined_client()) {
+    else if (g->isJoined_client()) {
         return -1;
     }
         // Group exists, but not joined
     else {
-        rs->groups[it]->mode = Filtermode::Exclude;
+        g->mode = Filtermode::Exclude;
     }
 
     for (int i = 0; i < rs->robustness_variable; i++) {
         // Create package
-        int size = sizeof(click_ip) + 4 + sizeof(IGMP_report) + sizeof(IGMP_grouprecord);
         WritablePacket *packet = rs->igmpReport.create_specific(groupaddress, IGMP_recordtype::CHANGE_TO_EXCLUDE_MODE);
 
         // Put in delay queue
@@ -267,15 +249,15 @@ int report_sender::leave_group(const String &conf, Element *e, void *thunk, Erro
     report_sender *rs = (report_sender *) e;
 
     // Finds group
-    int it = findK(rs->groups, groupaddress.in_addr());
+    Group *g = rs->igmp_groups.find(groupaddress.in_addr());
 
     // If not found or if group empty -> ignore
-    if (it == -1 || !rs->groups[it]->isJoined_client()) {
+    if (g == nullptr || !g->isJoined_client()) {
         return -1;
     }
 
     // Set group to empty
-    rs->groups[it]->mode = Filtermode::Include;
+    g->mode = Filtermode::Include;
 
     for (int i = 0; i < rs->robustness_variable; i++) {
         // Create packet

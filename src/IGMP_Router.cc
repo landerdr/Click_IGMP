@@ -37,7 +37,7 @@ int IGMP_Router::configure(Vector <String> &conf, ErrorHandler *errh) {
 
     // Initialise timer
     timer.initialize(this);
-    timer.schedule_after_msec(1000);
+    timer.schedule_after_msec(100);
     return 0;
 }
 

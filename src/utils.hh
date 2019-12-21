@@ -92,6 +92,17 @@ public:
     void add(Group *g) {
         groups.push_back(g);
     };
+
+    Vector<Group *> get_joined_groups() {
+        Vector<Group *> joined_groups;
+        for (Group *g : groups) {
+            if (g->isJoined_client()) {
+                joined_groups.push_back(g);
+            }
+        }
+        return joined_groups;
+    }
+
 };
 
 CLICK_ENDDECLS
