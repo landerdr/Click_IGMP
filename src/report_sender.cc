@@ -195,7 +195,12 @@ void report_sender::run_timer(Timer *t) {
             int it = findK(groups, add);
             // Group exists and is joined
             if (it != -1 && groups[it]->isJoined_client()) {
-                WritablePacket *packet = igmpReport.create_specific(groups[it]->groupaddress, groups[it]->mode);
+                WritablePacket *packet;
+                if (groups[it]->mode == Include) {
+                    packet = igmpReport.create_specific(groups[it]->groupaddress, IGMP_recordtype::MODE_IS_INCLUDE);
+                } else {
+                    packet = igmpReport.create_specific(groups[it]->groupaddress, IGMP_recordtype::MODE_IS_EXCLUDE);
+                }
                 output(0).push(packet);
             }
         }
@@ -235,7 +240,7 @@ int report_sender::join_group(const String &conf, Element *e, void *thunk, Error
     for (int i = 0; i < rs->robustness_variable; i++) {
         // Create package
         int size = sizeof(click_ip) + 4 + sizeof(IGMP_report) + sizeof(IGMP_grouprecord);
-        WritablePacket *packet = igmpReport.create_specific(groupaddress, IGMP_recordtype::CHANGE_TO_EXCLUDE_MODE);
+        WritablePacket *packet = rs->igmpReport.create_specific(groupaddress, IGMP_recordtype::CHANGE_TO_EXCLUDE_MODE);
 
         // Put in delay queue
         unsigned random = click_random(0, rs->max_resp_time);
@@ -271,7 +276,7 @@ int report_sender::leave_group(const String &conf, Element *e, void *thunk, Erro
 
     for (int i = 0; i < rs->robustness_variable; i++) {
         // Create packet
-        WritablePacket *packet = igmpReport.create_specific(groupaddress, IGMP_recordtype::CHANGE_TO_INCLUDE_MODE);
+        WritablePacket *packet = rs->igmpReport.create_specific(groupaddress, IGMP_recordtype::CHANGE_TO_INCLUDE_MODE);
 
         // Put in delay queue
         unsigned random = click_random(0, rs->max_resp_time);
