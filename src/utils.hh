@@ -43,9 +43,9 @@ public:
 };
 
 class Groups {
-private:
-    Vector<Group *> groups;
 public:
+    Vector<Group *> groups;
+
     Groups() {};
 
     ~Groups() {
@@ -54,7 +54,7 @@ public:
         }
     };
 
-    int findKey(in_addr &k) {
+    int findKey(in_addr k) {
         for (int i = 0; i < groups.size(); i++) {
             if (groups[i]->groupaddress == k) {
                 return i;
@@ -63,7 +63,7 @@ public:
         return -1;
     };
 
-    Group *find(in_addr &k) {
+    Group *find(in_addr k) {
         int it = findKey(k);
 
         if (it == -1) return nullptr;
@@ -71,7 +71,7 @@ public:
         return groups[it];
     };
 
-    void remove(in_addr &k) {
+    void remove(in_addr k) {
         int it = findKey(k);
 
         if (it == -1) return;
