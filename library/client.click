@@ -42,7 +42,5 @@ elementclass Client {
 	ipc[0]
 		-> Strip(14)
 		-> rs :: report_sender(SOURCE $address, DESTINATION $gateway)
-        -> IPEncap(PROTO 2, SRC $address, DST $gateway, TTL 1, TOS 0xc0)
-		-> EtherEncap(0x0800, $address:eth, $gateway:eth)
-		-> output;
+		-> arpq;
 }

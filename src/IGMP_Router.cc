@@ -28,8 +28,10 @@ IGMP_Router::IGMP_Router() : timer(this) {}
 IGMP_Router::~ IGMP_Router() {}
 
 int IGMP_Router::configure(Vector <String> &conf, ErrorHandler *errh) {
+    IPAddress src;
     // Read optional arguments
-    if (Args(conf, this, errh).read("QQIC", query_interval_time).read("MRT", max_resp_time).read("QRV", robustness_variable).complete() < 0)
+    if (Args(conf, this, errh).read_m("SRC", src).read("QQIC", query_interval_time).read("MRT", max_resp_time).read(
+            "QRV", robustness_variable).complete() < 0)
         return -1;
     // Check correctness
     if (robustness_variable < 1 && robustness_variable >= 7) return errh->error("QRV should be between [1,6]");
@@ -38,6 +40,9 @@ int IGMP_Router::configure(Vector <String> &conf, ErrorHandler *errh) {
 
     // Warning for qrv = 1
     if (robustness_variable == 1) click_chatter("Warning: QRV should not be 1");
+
+    // Successfully configured
+    igmpQuery = IGMP_Query(src);
 
     // Initialise timer
     timer.initialize(this);
@@ -50,20 +55,8 @@ void IGMP_Router::run_timer(Timer *t) {
     timer.schedule_after_msec(query_interval_time * 1000);
 
     // Create general query
-    int size = sizeof(IGMP_query);
-    WritablePacket *packet = Packet::make(size);
-    memset(packet->data(), 0, size);
-
-    IGMP_query *format = (struct IGMP_query *) packet->data();
-    *format = IGMP_query();
-    format->max_resp_code = max_resp_time;
-    format->qqic = query_interval_time;
-    format->qrv = robustness_variable;
-    format->multicast_address = BROADCAST;
-
-    // Set checksum
-    format->cksum = click_in_cksum((unsigned char *) format, size);
-    output(1).push(packet);
+    WritablePacket *packet = igmpQuery.create_general(max_resp_time, query_interval_time, robustness_variable);
+    output(0).push(packet);
     return;
 
 //    for (int i = 0; i < active_groups.size(); i++) {
@@ -94,7 +87,7 @@ void IGMP_Router::push(int input, Packet *p) {
 
             // Cast to grouprecords
             IGMP_grouprecord *grouprecord = (struct IGMP_grouprecord *) (rm + 1);
-            for (int i=0; i < rm->num_group_records; i++) {
+            for (int i = 0; i < rm->num_group_records; i++) {
                 // Leave message
                 if (grouprecord->type == IGMP_recordtype::CHANGE_TO_INCLUDE_MODE) {
                     int it = findKey(active_groups, grouprecord->multicast_address);
@@ -113,7 +106,7 @@ void IGMP_Router::push(int input, Packet *p) {
                         }
                     }
                 }
-                // Join message
+                    // Join message
                 else if (grouprecord->type == IGMP_recordtype::CHANGE_TO_EXCLUDE_MODE) {
                     Group *grp;
                     int it = findKey(active_groups, grouprecord->multicast_address);
