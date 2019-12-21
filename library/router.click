@@ -117,13 +117,13 @@ elementclass Router {
 	rt[4] -> mct :: Tee (3)
 
 	// Server trafic
-	mct[0] -> igmpr0 :: IGMP_Router(SRC $server_address, QQIC 20, MRT 20) -> server_arpq;
+	mct[0] -> igmpr0 :: IGMP_Router(SRC $server_address, QQIC 20, MRT 200) -> server_arpq;
 	igmp0[0] -> Strip(14) -> igmpr0;
 	// Client 1 traffic
-	mct[1] -> igmpr1 :: IGMP_Router(SRC $client1_address, QQIC 20, MRT 20) -> client1_arpq;
+	mct[1] -> igmpr1 :: IGMP_Router(SRC $client1_address, QQIC 20, MRT 200) -> client1_arpq;
 	igmp1[0] -> Strip(14) -> igmpr1;
 	// Client 2 traffic
-	mct[2] -> igmpr2 :: IGMP_Router(SRC $client2_address, QQIC 20, MRT 20) -> client2_arpq;
+	mct[2] -> igmpr2 :: IGMP_Router(SRC $client2_address, QQIC 20, MRT 200) -> client2_arpq;
 	igmp2[0] -> Strip(14) -> igmpr2;
 
 

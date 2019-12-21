@@ -36,9 +36,4 @@ elementclass Server {
 
 	in_cl[1] -> [1]arpq;
 	in_cl[2] -> ip;
-	
-	udpsource::RandomSource(4)
-	-> udpencap::UDPIPEncap($address, 1234, multicast_client_address, 1234)
-	-> RatedUnqueue(1)
-	-> rt;
 }
