@@ -14,15 +14,6 @@ int findKey(Vector <clientTimer> v, in_addr k) {
     return -1;
 };
 
-int findKey(Vector<Group *> v, in_addr k) {
-    for (int i = 0; i < v.size(); i++) {
-        if (v[i]->groupaddress == k) {
-            return i;
-        }
-    }
-    return -1;
-};
-
 IGMP_Router::IGMP_Router() : timer(this) {}
 
 IGMP_Router::~ IGMP_Router() {}
@@ -50,22 +41,18 @@ int IGMP_Router::configure(Vector <String> &conf, ErrorHandler *errh) {
     return 0;
 }
 
+
 void IGMP_Router::run_timer(Timer *t) {
     // Set interval
-    timer.schedule_after_msec(query_interval_time * 1000);
+    timer.schedule_after_msec(100);
+
+    virtual_timer = (virtual_timer + 1) % (query_interval_time * 10);
 
     // Create general query
-    WritablePacket *packet = igmpQuery.create_general(max_resp_time, query_interval_time, robustness_variable);
-    output(0).push(packet);
-    return;
-
-//    for (int i = 0; i < active_groups.size(); i++) {
-//        active_groups[i]->grouptimer--;
-//        if (active_groups[i]->grouptimer == 0) {
-//            active_groups[i]->grouptimer = 60;
-//
-//        }
-//    }
+    if (virtual_timer == 0) {
+        WritablePacket *packet = igmpQuery.create_general(max_resp_time, query_interval_time, robustness_variable);
+        output(0).push(packet);
+    }
 }
 
 void IGMP_Router::push(int input, Packet *p) {
@@ -77,11 +64,6 @@ void IGMP_Router::push(int input, Packet *p) {
 
         // Cast to find format type
         test *format = (struct test *) (option + 2);
-        // Membership query
-        //if(format->type==0x11){
-        //click_chatter("gp");
-        //IGMP_query* gm = (struct IGMP_query*) (iph + 1);
-        //}
         // Membership report
         if (format->type == 0x22) {
             // Cast to membership report
@@ -92,35 +74,28 @@ void IGMP_Router::push(int input, Packet *p) {
             for (int i = 0; i < rm->num_group_records; i++) {
                 // Leave message
                 if (grouprecord->type == IGMP_recordtype::CHANGE_TO_INCLUDE_MODE) {
-                    int it = findKey(active_groups, grouprecord->multicast_address);
-                    // group found
-                    if (it != -1) {
-                        Group *p = active_groups[it];
-                        int it2 = findKey(p->sources, iph->ip_src);
+                    Group *g = igmp_groups.find(grouprecord->multicast_address);
+                    // Group found
+                    if (g != nullptr) {
+                        int it = findKey(g->sources, iph->ip_src);
                         // client found
-                        if (it2 != -1) {
-                            p->sources.erase(p->sources.begin() + it2);
+                        if (it != -1) {
+                            g->sources.erase(g->sources.begin() + it);
                             // if no more client in group, remove group
-                            if (p->isEmpty()) {
-                                delete p;
-                                active_groups.erase(active_groups.begin() + it);
+                            if (g->isEmpty()) {
+                                igmp_groups.remove(g);
                             }
                         }
                     }
                 }
                     // Join message
                 else if (grouprecord->type == IGMP_recordtype::CHANGE_TO_EXCLUDE_MODE) {
-                    Group *grp;
-                    int it = findKey(active_groups, grouprecord->multicast_address);
+                    Group *grp = igmp_groups.find(grouprecord->multicast_address);
                     // Group not found yet (no clients subscribed)
-                    if (it == -1) {
+                    if (grp == nullptr) {
                         grp = new Group;
                         grp->groupaddress = grouprecord->multicast_address;
-                        active_groups.push_back(grp);
-                    }
-                        // Use existing group
-                    else {
-                        grp = active_groups[it];
+                        igmp_groups.add(grp);
                     }
 
                     // Check if client not already present in group
@@ -141,8 +116,7 @@ void IGMP_Router::push(int input, Packet *p) {
     }
 
     // Passes IGMP multicast traffic if a client subscribed
-    int pos = findKey(active_groups, n->ip_header()->ip_dst);
-    if (pos != -1) {
+    if (igmp_groups.find(n->ip_header()->ip_dst) != nullptr) {
 //        click_chatter("in groups to send");
         output(0).push(n);
         return;

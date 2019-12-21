@@ -42,5 +42,57 @@ public:
     };
 };
 
+class Groups {
+private:
+    Vector<Group *> groups;
+public:
+    Groups() {};
+
+    ~Groups() {
+        for (Group *g : groups) {
+            delete g;
+        }
+    };
+
+    int findKey(in_addr &k) {
+        for (int i = 0; i < groups.size(); i++) {
+            if (groups[i]->groupaddress == k) {
+                return i;
+            }
+        }
+        return -1;
+    };
+
+    Group *find(in_addr &k) {
+        int it = findKey(k);
+
+        if (it == -1) return nullptr;
+
+        return groups[it];
+    };
+
+    void remove(in_addr &k) {
+        int it = findKey(k);
+
+        if (it == -1) return;
+
+        delete groups[it];
+        groups.erase(groups.begin() + it);
+    };
+
+    void remove(Group *g) {
+        for (int i = 0; i < groups.size(); i++) {
+            if (groups[i] == g) {
+                delete groups[i];
+                groups.erase(groups.begin() + i);
+            }
+        }
+    };
+
+    void add(Group *g) {
+        groups.push_back(g);
+    };
+};
+
 CLICK_ENDDECLS
 #endif

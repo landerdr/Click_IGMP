@@ -41,8 +41,8 @@ private:
 
     // Timers
     Timer timer;
-    Vector<Group *> active_groups;
-
+    Groups igmp_groups;
+    int virtual_timer = 0;
 };
 
 CLICK_ENDDECLS
