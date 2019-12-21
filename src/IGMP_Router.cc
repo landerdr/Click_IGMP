@@ -73,8 +73,10 @@ void IGMP_Router::push(int input, Packet *p) {
     if (n->ip_header()->ip_p == 2) {
         // Cast to IP-header
         click_ip *iph = (click_ip *) n->data();
+        uint16_t *option = (uint16_t * )(iph + 1);
+
         // Cast to find format type
-        test *format = (struct test *) (iph + 1);
+        test *format = (struct test *) (option + 2);
         // Membership query
         //if(format->type==0x11){
         //click_chatter("gp");
@@ -83,7 +85,7 @@ void IGMP_Router::push(int input, Packet *p) {
         // Membership report
         if (format->type == 0x22) {
             // Cast to membership report
-            IGMP_report *rm = (struct IGMP_report *) (iph + 1);
+            IGMP_report *rm = (struct IGMP_report *) (option + 2);
 
             // Cast to grouprecords
             IGMP_grouprecord *grouprecord = (struct IGMP_grouprecord *) (rm + 1);

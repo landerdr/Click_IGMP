@@ -67,10 +67,13 @@ void report_sender::push(int interface, Packet *p) {
     // IGMP protocol traffic
     if (n->ip_header()->ip_p == 2) {
         click_ip *iph = (click_ip *) n->data();
-        test *format = (struct test *) (iph + 1);
+        uint16_t *option = (uint16_t * )(iph + 1);
+
+        // Cast to find format type
+        test *format = (struct test *) (option + 2);
         // Query message
         if (format->type == 0x11) {
-            IGMP_query *gm = (struct IGMP_query *) (iph + 1);
+            IGMP_query *gm = (struct IGMP_query *) (option + 2);
             in_addr groupadd = gm->multicast_address;
             // Find group
             int it = findK(groups, groupadd);
