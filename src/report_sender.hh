@@ -43,7 +43,7 @@ private:
     IGMP_Report igmpReport;
 
     // Group list
-    Vector<Group *> groups;
+    Groups igmp_groups;
     // Timer list (queued for response)
     Vector <clientTimer> timers;
 
