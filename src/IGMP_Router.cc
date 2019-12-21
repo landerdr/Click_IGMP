@@ -53,6 +53,45 @@ void IGMP_Router::run_timer(Timer *t) {
         WritablePacket *packet = igmpQuery.create_general(max_resp_time, query_interval_time, robustness_variable);
         output(0).push(packet);
     }
+
+    // For every group
+    for (Group *g : igmp_groups.groups) {
+        if (g->timer != 0) {
+            g->timer--;
+        }
+        Vector<int> rem;
+        // For every client
+        for (int i = 0; i < g->sources.size(); i++) {
+            clientTimer t = g->sources[i];
+            if (t.time != 0) {
+                t.time--;
+            } else {
+                // If client timer 0 and mode INCLUDE -> remove client
+                if (g->mode == Include) {
+                    rem.push_back(i);
+                }
+            }
+        }
+        for (int i : rem) {
+            g->sources.erase(g->sources.begin() + i);
+        }
+        // If mode is EXCLUDE
+        if (g->mode == Exclude && g->timer == 0) {
+            // If clients present, switch to include.
+            if (g->sources.size() != 0) {
+                g->mode = Include;
+                g->timer = g->grouptimer;
+            }
+            // If no clients present, remove record.
+            else {
+                igmp_groups.remove(g);
+            }
+        }
+        // If mode INCLUDE and no clients -> remove group
+        else if (g->mode == Include && g->sources.size() == 0) {
+            igmp_groups.remove(g);
+        }
+    }
 }
 
 void IGMP_Router::push(int input, Packet *p) {
@@ -74,16 +113,19 @@ void IGMP_Router::push(int input, Packet *p) {
             for (int i = 0; i < rm->num_group_records; i++) {
                 // Leave message
                 if (grouprecord->type == IGMP_recordtype::CHANGE_TO_INCLUDE_MODE) {
-                    Group *g = igmp_groups.find(grouprecord->multicast_address);
+                    Group *grp = igmp_groups.find(grouprecord->multicast_address);
                     // Group found
-                    if (g != nullptr) {
-                        int it = findKey(g->sources, iph->ip_src);
+                    if (grp != nullptr) {
+                        // Update timer
+                        grp->timer = grp->grouptimer;
+                        // Look for client
+                        int it = findKey(grp->sources, iph->ip_src);
                         // client found
                         if (it != -1) {
-                            g->sources.erase(g->sources.begin() + it);
+                            grp->sources.erase(grp->sources.begin() + it);
                             // if no more client in group, remove group
-                            if (g->isEmpty()) {
-                                igmp_groups.remove(g);
+                            if (grp->isEmpty()) {
+                                igmp_groups.remove(grp);
                             }
                         }
                     }
@@ -91,19 +133,28 @@ void IGMP_Router::push(int input, Packet *p) {
                     // Join message
                 else if (grouprecord->type == IGMP_recordtype::CHANGE_TO_EXCLUDE_MODE) {
                     Group *grp = igmp_groups.find(grouprecord->multicast_address);
-                    // Group not found yet (no clients subscribed)
+                    // Group not found yet (no clients subscribed), create group
                     if (grp == nullptr) {
                         grp = new Group;
+                        grp->grouptimer = max_resp_time;
                         grp->groupaddress = grouprecord->multicast_address;
+                        grp->robustness = robustness_variable;
                         igmp_groups.add(grp);
                     }
 
+                    // Reset timer and mode
+                    grp->timer = grp->grouptimer;
+                    grp->mode = Exclude;
+
+                    int i = findKey(grp->sources, iph->ip_src);
                     // Check if client not already present in group
-                    if (findKey(grp->sources, iph->ip_src) == -1) {
+                    if (i == -1) {
                         clientTimer ct;
                         ct.address = iph->ip_src;
-                        ct.time = 200;
+                        ct.time = grp->grouptimer;
                         grp->sources.push_back(ct);
+                    } else {
+                        grp->sources[i].time = grp->grouptimer;
                     }
                 }
 
@@ -116,8 +167,8 @@ void IGMP_Router::push(int input, Packet *p) {
     }
 
     // Passes IGMP multicast traffic if a client subscribed
-    if (igmp_groups.find(n->ip_header()->ip_dst) != nullptr) {
-//        click_chatter("in groups to send");
+    Group *grp = igmp_groups.find(n->ip_header()->ip_dst);
+    if (grp != nullptr && (grp->mode == Exclude || grp->sources.size() > 0)) {
         output(0).push(n);
         return;
     }
