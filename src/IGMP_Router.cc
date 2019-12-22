@@ -88,7 +88,7 @@ void IGMP_Router::run_timer(Timer *t) {
             }
         }
         // If mode INCLUDE and no clients -> remove group
-        else if (g->mode == Include && g->sources.size() == 0 && timer == 0) {
+        else if (g->mode == Include && g->sources.size() == 0 && g->timer == 0) {
             igmp_groups.remove(g);
         }
     }
