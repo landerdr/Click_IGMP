@@ -88,7 +88,7 @@ void IGMP_Router::run_timer(Timer *t) {
             }
         }
         // If mode INCLUDE and no clients -> remove group
-        else if (g->mode == Include && g->sources.size() == 0) {
+        else if (g->mode == Include && g->sources.size() == 0 && timer == 0) {
             igmp_groups.remove(g);
         }
     }
@@ -126,10 +126,11 @@ void IGMP_Router::push(int input, Packet *p) {
                             WritablePacket *packet = igmpQuery.create_specific(grp->groupaddress, max_resp_time, query_interval_time, robustness_variable);
                             output(0).push(packet);
                             // if no more client in group, remove group
-//                            if (grp->isEmpty()) {
-//                                grp->wait = true;
+                            if (grp->isEmpty()) {
+                                grp->wait = true;
+                                grp->mode = Include;
 //                                igmp_groups.remove(grp);
-//                            }
+                            }
                         }
                     }
                 }
@@ -148,7 +149,7 @@ void IGMP_Router::push(int input, Packet *p) {
                     // Reset timer and mode
                     grp->timer = grp->grouptimer;
                     grp->mode = Exclude;
-//                    grp->wait = false;
+                    grp->wait = false;
 
                     int i = findKey(grp->sources, iph->ip_src);
                     // Check if client not already present in group
