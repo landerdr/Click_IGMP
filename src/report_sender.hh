@@ -58,6 +58,7 @@ private:
     unsigned max_resp_time = 100; // maximum response time | default = 100 (10s)
     unsigned query_interval_time = 125; // QQIC: time between queries | default = 125 (seconds)
     unsigned robustness_variable = 2; // robustness from system | default = 2 (amount of joins/leaves send)
+    unsigned unsolicited_report_interval = 1; // max time in between sending join/leave reports | default = 1 (s)
 };
 
 CLICK_ENDDECLS
