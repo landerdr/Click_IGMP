@@ -27,10 +27,11 @@ public:
     in_addr groupaddress;
     Filtermode mode;
     Vector <clientTimer> sources;
+    bool wait = false;
 
     // present for igmp compliance
     unsigned int grouptimer;
-    int robustness;
+    unsigned robustness;
     int timer;
 
     bool isEmpty() {

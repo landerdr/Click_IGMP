@@ -40,7 +40,7 @@ report_sender::~report_sender() {
 }
 
 int report_sender::configure(Vector <String> &conf, ErrorHandler *errh) {
-    if (Args(conf, this, errh).read_mp("SOURCE", src).read_mp("DESTINATION", dst).complete() < 0)
+    if (Args(conf, this, errh).read_mp("SOURCE", src).read_mp("DESTINATION", dst).read("URP", unsolicited_report_interval).complete() < 0)
         return -1;
 
     igmpReport = IGMP_Report(src);
@@ -76,12 +76,19 @@ void report_sender::push(int interface, Packet *p) {
             }
 
             group->grouptimer = gm->max_resp_code;
-            group->robustness = gm->qrv;
+            if (gm->qrv != 0) {
+                group->robustness = gm->qrv;
+            } else {
+                group->robustness = robustness_variable;
+            }
+
 
             //set QQIC/QRV/MRT if general query
             if (groupadd == BROADCAST) {
                 query_interval_time = gm->qqic;
-                robustness_variable = gm->qrv;
+                if (gm->qrv != 0) {
+                    robustness_variable = gm->qrv;
+                }
                 max_resp_time = gm->max_resp_code;
             }
 
@@ -211,6 +218,10 @@ int report_sender::join_group(const String &conf, Element *e, void *thunk, Error
     // Find group
     Group *g = rs->igmp_groups.find(groupaddress.in_addr());
 
+    if (groupaddress == IGMP_MULTICAST) {
+        return -1;
+    }
+
     // If group not found, create group and join
     if (g == nullptr) {
         g = new Group;
@@ -234,7 +245,7 @@ int report_sender::join_group(const String &conf, Element *e, void *thunk, Error
         WritablePacket *packet = rs->igmpReport.create_specific(groupaddress, IGMP_recordtype::CHANGE_TO_EXCLUDE_MODE);
 
         // Put in delay queue
-        unsigned random = click_random(0, rs->max_resp_time);
+        unsigned random = click_random(0, rs->unsolicited_report_interval*10);
         packetTimer pt;
         pt.packet = packet;
         pt.time = random;
@@ -258,7 +269,7 @@ int report_sender::leave_group(const String &conf, Element *e, void *thunk, Erro
     Group *g = rs->igmp_groups.find(groupaddress.in_addr());
 
     // If not found or if group empty -> ignore
-    if (g == nullptr || !g->isJoined_client()) {
+    if (g == nullptr || !g->isJoined_client() || groupaddress == IGMP_MULTICAST) {
         return -1;
     }
 
@@ -270,7 +281,7 @@ int report_sender::leave_group(const String &conf, Element *e, void *thunk, Erro
         WritablePacket *packet = rs->igmpReport.create_specific(groupaddress, IGMP_recordtype::CHANGE_TO_INCLUDE_MODE);
 
         // Put in delay queue
-        unsigned random = click_random(0, rs->max_resp_time);
+        unsigned random = click_random(0, rs->unsolicited_report_interval*10);
         packetTimer pt;
         pt.packet = packet;
         pt.time = random;
