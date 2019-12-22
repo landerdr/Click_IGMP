@@ -109,6 +109,12 @@ void report_sender::push(int interface, Packet *p) {
                 igmp_groups.add(group);
             }
         }
+    } else if (n->ip_header()->ip_p == 17) {
+        Group *grp = igmp_groups.find(n->ip_header()->ip_dst);
+        if (grp != nullptr && grp->mode == Exclude) {
+            output(1).push(p);
+            return;
+        }
     }
 
     // Kill all packets

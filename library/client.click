@@ -36,11 +36,18 @@ elementclass Client {
 
 	in_cl[1] -> [1]arpq;
 	in_cl[2]
-		-> ipc :: IPClassifier(ip proto 2, -)[1]
+		-> ipc :: IPClassifier(ip proto 2, ip proto 17, -)[2]
 		-> ip;
-	
+
+	// IGMP traffic
 	ipc[0]
 		-> Strip(14)
 		-> rs :: report_sender(SOURCE $address, DESTINATION $gateway)
 		-> arpq;
+
+	// UDP traffic
+	ipc[1]
+	    -> Strip(14)
+        -> rs[1]
+        -> [1]output;
 }
