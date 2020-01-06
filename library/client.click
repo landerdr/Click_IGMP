@@ -42,12 +42,12 @@ elementclass Client {
 	// IGMP traffic
 	ipc[0]
 		-> Strip(14)
-		-> rs :: report_sender(SOURCE $address, DESTINATION $gateway)
+		-> igmp :: report_sender(SOURCE $address, DESTINATION $gateway)
 		-> arpq;
 
 	// UDP traffic
 	ipc[1]
 	    -> Strip(14)
-        -> rs[1]
+        -> igmp[1]
         -> [1]output;
 }
