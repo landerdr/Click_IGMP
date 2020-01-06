@@ -31,6 +31,7 @@ public:
 
     // present for igmp compliance
     unsigned int grouptimer;
+    unsigned int clienttimer;
     unsigned robustness;
     int timer;
 

@@ -70,11 +70,28 @@ void report_sender::push(int interface, Packet *p) {
         click_ip *iph = (click_ip *) n->data();
         uint16_t *option = (uint16_t * )(iph + 1);
 
+        int headersize = sizeof(click_ip) + 4;
+        uint16_t chks = iph->ip_sum;
+        iph->ip_sum = 0;
+        if (chks != click_in_cksum((unsigned char *) iph, headersize)) {
+            p->kill();
+            return;
+        }
+
         // Cast to find format type
         test *format = (struct test *) (option + 2);
         // Query message
         if (format->type == 0x11) {
             IGMP_query *gm = (struct IGMP_query *) (option + 2);
+
+            int reportsize = sizeof(IGMP_query);
+            uint16_t chks = gm->cksum;
+            gm->cksum = 0;
+            if (chks != click_in_cksum((unsigned char *) gm, reportsize)) {
+                p->kill();
+                return;
+            }
+
             in_addr groupadd = gm->multicast_address;
             // Find group
             Group *group = igmp_groups.find(groupadd);
