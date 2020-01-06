@@ -109,6 +109,14 @@ void IGMP_Router::push(int input, Packet *p) {
         click_ip *iph = (click_ip *) n->data();
         uint16_t *option = (uint16_t * )(iph + 1);
 
+        int headersize = sizeof(click_ip) + 4;
+        uint16_t chks = iph->ip_sum;
+        iph->ip_sum = 0;
+        if (chks != click_in_cksum((unsigned char *) iph, headersize)) {
+            p->kill();
+            return;
+        }
+
         // Cast to find format type
         test *format = (struct test *) (option + 2);
         // Membership report
@@ -116,9 +124,17 @@ void IGMP_Router::push(int input, Packet *p) {
             // Cast to membership report
             IGMP_report *rm = (struct IGMP_report *) (option + 2);
 
+            int reportsize = sizeof(IGMP_report) + ntohs(rm->num_group_records) * sizeof(IGMP_grouprecord);
+            uint16_t chks = rm->cksum;
+            rm->cksum = 0;
+            if (chks != click_in_cksum((unsigned char *) rm, reportsize)) {
+                p->kill();
+                return;
+            }
+
             // Cast to grouprecords
             IGMP_grouprecord *grouprecord = (struct IGMP_grouprecord *) (rm + 1);
-            for (int i = 0; i < rm->num_group_records; i++) {
+            for (int i = 0; i < ntohs(rm->num_group_records); i++) {
                 // Leave message
                 if (grouprecord->type == IGMP_recordtype::CHANGE_TO_INCLUDE_MODE || grouprecord->type == IGMP_recordtype::MODE_IS_INCLUDE) {
                     Group *grp = igmp_groups.find(grouprecord->multicast_address);
@@ -148,7 +164,8 @@ void IGMP_Router::push(int input, Packet *p) {
                     // Group not found yet (no clients subscribed), create group
                     if (grp == nullptr) {
                         grp = new Group;
-                        grp->grouptimer = decode(max_resp_time);
+                        grp->grouptimer = query_interval_time*10;
+                        grp->clienttimer = decode(max_resp_time);
                         grp->groupaddress = grouprecord->multicast_address;
                         grp->robustness = robustness_variable;
                         igmp_groups.add(grp);
@@ -164,10 +181,10 @@ void IGMP_Router::push(int input, Packet *p) {
                     if (i == -1) {
                         clientTimer ct;
                         ct.address = iph->ip_src;
-                        ct.time = grp->grouptimer;
+                        ct.time = grp->clienttimer;
                         grp->sources.push_back(ct);
                     } else {
-                        grp->sources[i].time = grp->grouptimer;
+                        grp->sources[i].time = grp->clienttimer;
                     }
                 }
 
