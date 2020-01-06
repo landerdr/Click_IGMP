@@ -14,6 +14,14 @@ int findKey(Vector <clientTimer> v, in_addr k) {
     return -1;
 };
 
+unsigned decode(unsigned value) {
+    if (value < 128) return value;
+
+    unsigned exp = (value & 112) >> 4;
+    unsigned mant = (value & 15);
+    return (mant | 0x10) << (exp + 3);
+};
+
 IGMP_Router::IGMP_Router() : timer(this) {}
 
 IGMP_Router::~ IGMP_Router() {}
@@ -140,7 +148,7 @@ void IGMP_Router::push(int input, Packet *p) {
                     // Group not found yet (no clients subscribed), create group
                     if (grp == nullptr) {
                         grp = new Group;
-                        grp->grouptimer = max_resp_time;
+                        grp->grouptimer = decode(max_resp_time);
                         grp->groupaddress = grouprecord->multicast_address;
                         grp->robustness = robustness_variable;
                         igmp_groups.add(grp);

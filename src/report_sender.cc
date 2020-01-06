@@ -33,6 +33,14 @@ Vector <String> split(const String &s, char delim) {
     return v;
 }
 
+unsigned decodeF(unsigned value) {
+    if (value < 128) return value;
+
+    unsigned exp = (value & 112) >> 4;
+    unsigned mant = (value & 15);
+    return (mant | 0x10) << (exp + 3);
+};
+
 report_sender::report_sender() : timer(this) {
 }
 
@@ -77,7 +85,7 @@ void report_sender::push(int interface, Packet *p) {
                 group->groupaddress = groupadd;
             }
 
-            group->grouptimer = gm->max_resp_code;
+            group->grouptimer = decodeF(gm->max_resp_code);
             if (gm->qrv != 0) {
                 group->robustness = gm->qrv;
             } else {
@@ -91,12 +99,12 @@ void report_sender::push(int interface, Packet *p) {
                 if (gm->qrv != 0) {
                     robustness_variable = gm->qrv;
                 }
-                max_resp_time = gm->max_resp_code;
+                max_resp_time = decodeF(gm->max_resp_code);
             }
 
             // If group specific and joined or general query, respond
             if (group->isJoined_client() || group->wait || groupadd == BROADCAST) {
-                unsigned random = click_random(0, gm->max_resp_code);
+                unsigned random = click_random(0, decodeF(gm->max_resp_code));
                 group->wait = false;
                 // Queue response
                 clientTimer ct;

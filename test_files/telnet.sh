@@ -2,11 +2,10 @@
 
 
 telnet localhost 10003 <<EOF
-write client21/rs.join 224.4.4.4
-
+write client21/igmp.join 224.4.4.4
 EOF
-sleep 60
+sleep 30
 telnet localhost 10003 <<EOF
 
-write client21/rs.leave 224.4.4.4
+write client21/igmp.leave 224.4.4.4
 EOF
