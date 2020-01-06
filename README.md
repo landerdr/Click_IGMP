@@ -16,5 +16,5 @@ Make sure the reference solution is in the correct place, this has been written 
 To make a client join/leave a multicast address:
 
     > telnet localhost 10003
-    $ write client21/rs.join GROUP 224.4.4.4
-    $ write client21/rs.leave GROUP 224.4.4.4
+    $ write client21/igmp.join 224.4.4.4
+    $ write client21/igmp.leave 224.4.4.4
